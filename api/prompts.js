@@ -28,9 +28,47 @@ function buildReadingPrompt(chart, person, question) {
   ).join('\n');
  
   const yogaLines = chart.yogas.map(y => {
-    const status = y.nullified ? ' — NULLIFIED' : y.type === 'bad' ? ' — ACTIVE DOSHA' : '';
-    const nullInfo = y.nullified && y.nullifiers?.length ? ` | Nullified by: ${y.nullifiers.join('; ')}` : '';
-    return `  [${y.type.toUpperCase()}${y.nullified?' NULLIFIED':''}] ${y.name}${status}: ${y.desc}${nullInfo}`;
+    // Compute nullification on the fly from chart data
+    let nullified = y.nullified || false;
+    let nullifiers = [...(y.nullifiers||[])];
+ 
+    if (y.name?.includes('Mangal Dosha')) {
+      const marsSt = p['Mars']?.status || '';
+      const jupAspects = p['Jupiter']?.aspects || [];
+      const marsH = p['Mars']?.house;
+      const lagnaIdx = chart.lagna?.rasiIdx ?? -1;
+      if (marsSt.includes('Exalted') || marsSt.includes('Own'))
+        nullifiers.push('Mars is ' + marsSt + ' — Mangal Dosha nullified');
+      if (jupAspects.includes(marsH))
+        nullifiers.push('Jupiter (H' + p['Jupiter']?.house + ') aspects Mars — Dosha nullified');
+      if ([0,7].includes(lagnaIdx))
+        nullifiers.push('Mesha/Vrischika Lagna — Mangal Dosha nullified');
+      if (nullifiers.length) nullified = true;
+    }
+ 
+    if (y.name?.includes('Neecham') || y.name?.includes('Debil')) {
+      // Check Neecha Bhanga — lord of debilitation sign in Kendra OR exaltation lord in Kendra
+      const KENDRA = [1,4,7,10];
+      const RASI_LORD = ['Mars','Venus','Mercury','Moon','Sun','Mercury','Venus','Mars','Jupiter','Saturn','Saturn','Jupiter'];
+      const RASI_EXALT = {Sun:0,Moon:1,Mars:9,Mercury:5,Jupiter:3,Venus:11,Saturn:6};
+      const RASI_DEBIL = {Sun:6,Moon:7,Mars:3,Mercury:11,Jupiter:9,Venus:5,Saturn:0};
+      const planet = y.planet || y.name?.split(' ')[0];
+      if (planet && RASI_DEBIL[planet] !== undefined) {
+        const debilLord = RASI_LORD[RASI_DEBIL[planet]];
+        const exaltLord = RASI_LORD[RASI_EXALT[planet] ?? 0];
+        if (KENDRA.includes(p[debilLord]?.house))
+          nullifiers.push(debilLord + ' (debilitation sign lord) in H' + p[debilLord]?.house + ' Kendra — Neecha Bhanga');
+        if (KENDRA.includes(p[exaltLord]?.house))
+          nullifiers.push(exaltLord + ' (exaltation sign lord) in H' + p[exaltLord]?.house + ' Kendra — Neecha Bhanga');
+        if (KENDRA.includes(p[planet]?.house))
+          nullifiers.push(planet + ' itself in Kendra H' + p[planet]?.house + ' — Neecha Bhanga Raja Yoga');
+        if (nullifiers.length) nullified = true;
+      }
+    }
+ 
+    const statusLabel = nullified ? ' — NULLIFIED' : y.type === 'bad' ? ' — ACTIVE DOSHA' : '';
+    const nullInfo = nullified && nullifiers.length ? ' | Nullified by: ' + nullifiers.join('; ') : '';
+    return `  [${y.type.toUpperCase()}${nullified?' NULLIFIED':''}] ${y.name}${statusLabel}: ${y.desc}${nullInfo}`;
   }).join('\n');
  
   const houseLines = Object.entries(chart.houses).map(([h,planets])=>
@@ -166,4 +204,3 @@ function getHouseName(h) {
 }
  
 module.exports = { buildReadingPrompt, buildMatchPrompt };
- 
