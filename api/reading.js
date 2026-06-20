@@ -24,73 +24,110 @@ module.exports = async function handler(req, res) {
       nakshatra: nakshatra || undefined,
     });
  
-    // Build the full prompt from prompts.js — same as before
+    // Build the full prompt exactly as before — untouched
     const fullPrompt = buildReadingPrompt(chart, { name, gender: gender || 'not specified' }, question);
  
-    const yr = new Date().getFullYear();
-    const p  = chart.planets;
-    const d  = chart.dasha;
+    const yr  = new Date().getFullYear();
+    const p   = chart.planets;
+    const d   = chart.dasha;
     const curM = d.current?.lord;
     const curA = d.currentAntar?.lord;
  
-    // Split into 5 focused prompts — each uses the full chart context from buildReadingPrompt
-    // but asks only for specific sections so nothing is cut off
-    const makePrompt = (sections) =>
-      fullPrompt.replace(
-        /━+[\s\S]*$/,
-        `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nWrite ONLY these sections now with full detail. Two paragraphs minimum per section. No bullet points.\n\n${sections}`
-      );
+    // Split the prompt at the divider line — keep chart context, swap section instructions
+    const divider = '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    const chartContext = fullPrompt.split(divider)[0] + divider;
  
     const [r1, r2, r3, r4, r5] = await Promise.all([
  
       // CALL 1 — Character + Past + Current Period
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 1500,
         system: SYSTEM,
-        messages: [{ role: 'user', content: makePrompt(
-          `=== CHARACTER & PERSONALITY ===\n(Lagna, Rasi, Nakshatra — appearance, personality, strengths, weaknesses, emotional nature. Very specific.)\n\n=== WHAT HAS HAPPENED IN LIFE (Past) ===\n(Each past Dasha period — childhood, education, family events, turning points with years/ages.)\n\n=== CURRENT PERIOD — ${curM} DASHA, ${curM}-${curA} BHUKTI ===\n(RIGHT NOW — career, relationships, health, mindset, challenges, opportunities. Specific to current Dasha lord house position.)`
-        )}]
+        messages: [{ role: 'user', content: chartContext + `
+ 
+=== CHARACTER & PERSONALITY ===
+(Based on Lagna lord position, Rasi, Nakshatra nature — describe their appearance, personality, strengths, weaknesses, thinking style, emotional nature. Be very specific.)
+ 
+=== WHAT HAS HAPPENED IN LIFE (Past) ===
+(Read each past Dasha period. What happened during each — childhood, education, family events, turning points. Connect planet significations to life events with years/ages.)
+ 
+=== CURRENT PERIOD — ${curM} DASHA, ${curM}-${curA} BHUKTI ===
+(What is happening RIGHT NOW in their life — career, relationships, health, mindset, challenges, opportunities. Very specific to current Dasha lord's house position and nature.)` }]
       }),
  
       // CALL 2 — Career + Wealth + Property + Siblings/Father
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 1500,
         system: SYSTEM,
-        messages: [{ role: 'user', content: makePrompt(
-          `=== CAREER & EDUCATION ===\n(H10, 10th lord, Sun, Mercury, Saturn — what career suits them? When does career peak? Key years from Dashas.)\n\n=== WEALTH & FINANCES ===\n(H2, H11, their lords, Jupiter — when does money come? Lean periods? Long-term financial picture.)\n\n=== PROPERTY & VEHICLES ===\n(H4, 4th lord, Venus — land, home, vehicles, comforts. Timing from Dasha.)\n\n=== SIBLINGS & FATHER ===\n(H3 for siblings, Mars — relationship with siblings. H9 for father, Jupiter, Sun — father's influence, luck, dharma.)`
-        )}]
+        messages: [{ role: 'user', content: chartContext + `
+ 
+=== CAREER & EDUCATION ===
+(10th house, 10th lord, planets in 10th, Sun position, Mercury, Saturn — what career suits them? When does career peak? Key career years based on Dashas.)
+ 
+=== WEALTH & FINANCES ===
+(2nd house, 11th house, their lords, Jupiter's role — financial prospects, when wealth comes, any financial challenges.)
+ 
+=== PROPERTY & VEHICLES ===
+(4th house, 4th lord, Venus — land, home ownership, vehicles, material comforts. When property is likely from Dasha.)
+ 
+=== SIBLINGS & FATHER ===
+(3rd house for siblings, Mars — relationship with siblings, courage. 9th house for father, Jupiter, Sun — father's influence, luck, dharma, long travel.)` }]
       }),
  
       // CALL 3 — Marriage + Children + Health
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 1500,
         system: SYSTEM,
-        messages: [{ role: 'user', content: makePrompt(
-          `=== MARRIAGE & RELATIONSHIPS ===\n(H7: ${chart.houses[7]?.join(', ')||'Empty'}, 7th lord, Venus H${p.Venus?.house} — when is marriage likely? What kind of partner? Love or arranged? Mangal Dosha? Any delays?)\n\n=== CHILDREN ===\n(H5: ${chart.houses[5]?.join(', ')||'Empty'}, Jupiter H${p.Jupiter?.house} — prospects, timing, any concerns.)\n\n=== HEALTH ===\n(H1, H6, H8 — constitution, disease tendencies, body parts to watch, which Dasha periods need health care. Mental health from Moon.)`
-        )}]
+        messages: [{ role: 'user', content: chartContext + `
+ 
+=== MARRIAGE & RELATIONSHIPS ===
+(7th house: ${chart.houses[7]?.join(', ')||'Empty'}, 7th lord: ${p[chart.rasi.lord]?.house}, Venus position — when is marriage likely? What kind of partner? Love or arranged? Mangal Dosha present? Any delays?)
+ 
+=== CHILDREN ===
+(5th house: ${chart.houses[5]?.join(', ')||'Empty'}, Jupiter, 5th lord — prospects for children, timing, any concerns.)
+ 
+=== HEALTH ===
+(1st house, 6th house, 8th house, their lords — constitution, disease tendencies, which body parts to watch, which periods need health care. Mental health from Moon position.)` }]
       }),
  
       // CALL 4 — Next 5 Years + Foreign + Enemies + Spirituality
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 1500,
         system: SYSTEM,
-        messages: [{ role: 'user', content: makePrompt(
-          `=== NEXT 5 YEARS — YEAR BY YEAR (${yr} to ${yr+5}) ===\n(Each year: which Antardasha is running, what it means for career/money/relationships/health. Specific and practical.)\n\n=== FOREIGN TRAVEL & ABROAD ===\n(H12: ${chart.houses[12]?.join(', ')||'Empty'}, Rahu H${p.Rahu?.house} — foreign opportunities, overseas life, when travel likely.)\n\n=== ENEMIES & OBSTACLES ===\n(H6: ${chart.houses[6]?.join(', ')||'Empty'} — enemies, court cases, competition, debts. How they overcome challenges.)\n\n=== SPIRITUALITY & DHARMA ===\n(H9, H12, Ketu H${p.Ketu?.house}, Jupiter — spiritual inclinations, past life karma, dharmic path, moksha.)`
-        )}]
+        messages: [{ role: 'user', content: chartContext + `
+ 
+=== NEXT 5 YEARS — YEAR BY YEAR (${yr} to ${yr+5}) ===
+(Go year by year. For each year state: which Antardasha is running, what it means for career/money/relationships/health. Be specific and practical.)
+ 
+=== FOREIGN TRAVEL & ABROAD ===
+(12th house: ${chart.houses[12]?.join(', ')||'Empty'}, Rahu H${p.Rahu?.house}, 9th lord — foreign opportunities, overseas life, when foreign travel or settlement is likely based on Dasha.)
+ 
+=== ENEMIES & OBSTACLES ===
+(6th house: ${chart.houses[6]?.join(', ')||'Empty'}, 6th lord — enemies, court cases, competition, debts. How they overcome challenges and opposition.)
+ 
+=== SPIRITUALITY & DHARMA ===
+(9th house, 12th house, Ketu H${p.Ketu?.house}, Jupiter — spiritual inclinations, past life karma, dharmic path, moksha indicators.)` }]
       }),
  
       // CALL 5 — Special Strengths + Doshas & Remedies + Question
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 1500,
         system: SYSTEM,
-        messages: [{ role: 'user', content: makePrompt(
-          `=== SPECIAL STRENGTHS OF THIS CHART ===\n(Which yogas give special gifts? The strongest planet and what it promises. What makes this chart exceptional.)\n\n=== DOSHAS & PARIHARAMS (Remedies) ===\n(Every Dosha — ACTIVE or NULLIFIED, exact reason. For every ACTIVE Dosha: specific temple name, deity, day, mantra with count, gemstone with finger and metal, colour to wear, food to donate.)${question ? `\n\n=== ANSWER TO YOUR QUESTION ===\n(${question} — address with full astrological reasoning and specific timing.)` : ''}`
-        )}]
+        messages: [{ role: 'user', content: chartContext + `
+ 
+=== SPECIAL STRENGTHS OF THIS CHART ===
+(What makes this chart exceptional — which yogas, which placements give special gifts or protection.)
+ 
+=== DOSHAS & PARIHARAMS (Remedies) ===
+(Go through every Dosha listed in YOGAS & DOSHAS above. For EACH one state clearly: ACTIVE or NULLIFIED. If NULLIFIED — explain exactly which rule cancels it and what that means for this person. If ACTIVE — give the complete remedy: specific temple name in Tamil Nadu or Kerala, presiding deity, day of week, exact mantra with number of repetitions, gemstone with which finger and which metal, colour to wear, food to donate.)${question ? `
+ 
+=== ANSWER TO YOUR QUESTION ===
+(Address the specific question with full astrological reasoning.)` : ''}` }]
       }),
  
     ]);
