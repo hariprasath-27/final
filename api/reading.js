@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
     const ctx = fullPrompt.split(divider)[0].trimEnd();
  
     // One section per call — all run in parallel simultaneously
-    const sec = (header, instruction, tokens = 2000) => anthropic.messages.create({
+    const sec = (header, instruction, tokens = 4000) => anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: tokens,
       system: SYSTEM,
