@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jothidam — Tamil Astrology</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#c9a84c;--gold2:#e8c97a;--gold3:#f5dfa0;
+  --bg:#06060e;--card:#0f0e1a;--card2:#161426;--card3:#1c1930;
+  --border:#252040;--border2:#302a50;
+  --text:#e8e0d0;--muted:#7a7090;--muted2:#504870;
+  --purple:#7c5cbf;--green:#4caf7a;--red:#c94c4c;--amber:#d4a030;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+a{color:var(--gold);text-decoration:none}
+
+/* HEADER */
+.header{text-align:center;padding:40px 20px 28px;border-bottom:0.5px solid var(--border)}
+.logo{font-size:32px;font-weight:200;letter-spacing:6px;color:var(--gold);text-transform:uppercase}
+.logo-sub{font-size:12px;letter-spacing:3px;color:var(--muted);margin-top:6px;text-transform:uppercase}
+.star-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0}
+.star-row::before,.star-row::after{content:'';flex:1;max-width:120px;height:0.5px;background:linear-gradient(90deg,transparent,var(--gold)60%,transparent)}
+.star-row span{font-size:9px;color:var(--gold);opacity:.5;letter-spacing:4px}
+
+/* LAYOUT */
+.main{max-width:900px;margin:0 auto;padding:24px 16px}
+
+/* MODE TABS */
+.tabs{display:flex;gap:0;margin-bottom:24px;border:0.5px solid var(--border);border-radius:10px;overflow:hidden}
+.tab{flex:1;padding:12px;background:transparent;border:none;color:var(--muted);font-size:13px;cursor:pointer;letter-spacing:.5px;transition:.2s}
+.tab.active{background:var(--card2);color:var(--gold);border-bottom:2px solid var(--gold)}
+.tab:hover:not(.active){background:var(--card);color:var(--text)}
+
+/* FORM */
+.form-section{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:22px;margin-bottom:18px}
+.form-title{font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:16px;opacity:.8}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+.field input,.field select{
+  background:#0a091a;border:0.5px solid var(--border);border-radius:8px;
+  padding:10px 12px;color:var(--text);font-size:13px;outline:none;transition:.2s;
+}
+.field input:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.08)}
+.field select option{background:#0a091a}
+.field input::placeholder{color:var(--muted2)}
+.field-note{font-size:10px;color:var(--muted2);margin-top:3px}
+
+.btn{width:100%;padding:14px;border:none;border-radius:10px;font-size:13px;font-weight:600;
+  cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:.2s;margin-top:6px}
+.btn-primary{background:var(--gold);color:#06060e}
+.btn-primary:hover{background:var(--gold2)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-outline{background:transparent;border:0.5px solid var(--border2);color:var(--gold);margin-top:8px}
+.btn-outline:hover{border-color:var(--gold);background:rgba(201,168,76,.07)}
+
+.err{background:rgba(201,76,76,.08);border:0.5px solid rgba(201,76,76,.3);border-radius:8px;
+  padding:10px 14px;font-size:12px;color:#e09090;margin-top:8px;display:none}
+
+/* CHART DISPLAY */
+.chart-wrap{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;display:none}
+.section-title{font-size:10px;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:14px;opacity:.8}
+
+/* South Indian Chart */
+.si-chart{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:1px;
+  background:var(--border);border-radius:6px;overflow:hidden;height:270px;max-width:360px}
+.si-cell{background:var(--card2);padding:5px 4px;position:relative;min-height:60px}
+.si-cell.center{background:#09091a;grid-column:2/4;grid-row:2/4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.si-cell .hn{font-size:7px;color:var(--muted2);position:absolute;top:3px;left:4px}
+.si-cell .rsn{font-size:7px;color:#2a2545;position:absolute;bottom:3px;right:4px}
+.si-cell .ptags{display:flex;flex-wrap:wrap;gap:2px;margin-top:13px}
+.ptag{font-size:9px;padding:1px 4px;border-radius:3px;border:0.5px solid;white-space:nowrap}
+.ptag-lag{border-color:#7c5cbf88;color:#c0a0ff;background:rgba(124,92,191,.15)}
+.ptag-p{border-color:rgba(201,168,76,.4);color:#e8c97a;background:rgba(201,168,76,.1)}
+.ptag-rk{border-color:rgba(255,120,80,.4);color:#ffaa80;background:rgba(255,120,80,.08)}
+.ptag-ex{border-color:rgba(76,175,122,.5);color:#6cdf9a;background:rgba(76,175,122,.1)}
+
+/* Info cards */
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.ic{background:#0a091a;border:0.5px solid var(--border);border-radius:8px;padding:9px 11px}
+.ic .l{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase}
+.ic .v{font-size:13px;font-weight:500;color:var(--gold2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ic .s{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* Planet table */
+.pt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.pt th{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:6px 8px;text-align:left;border-bottom:0.5px solid var(--border)}
+.pt td{padding:6px 8px;border-bottom:0.5px solid #12101f;color:#ccc4b8}
+.pt tr:last-child td{border-bottom:none}
+.pt tr:hover td{background:rgba(255,255,255,.02)}
+.hb{display:inline-block;background:rgba(201,168,76,.1);border:0.5px solid rgba(201,168,76,.25);border-radius:4px;padding:1px 6px;font-size:10px;color:var(--gold)}
+.st-ex{color:#4caf7a;font-size:11px}.st-own{color:#6cdf9a;font-size:11px}
+.st-deb{color:#e07070;font-size:11px}.st-n{color:var(--muted);font-size:11px}
+
+/* Dasha */
+.dasha-block{background:#0a091a;border:0.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:7px}
+.dasha-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;min-width:80px}
+.dv{font-size:14px;font-weight:500;color:var(--gold2)}
+.ds{font-size:11px;color:var(--muted)}
+.pbar{height:4px;background:#151328;border-radius:2px;margin-top:8px;overflow:hidden}
+.pbf{height:100%;background:var(--gold);border-radius:2px;transition:width .8s}
+
+/* Yogas */
+.yoga-grid{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ytag{padding:3px 10px;border-radius:20px;font-size:11px;border:0.5px solid}
+.y-good{border-color:rgba(76,175,122,.4);color:#4caf7a;background:rgba(76,175,122,.07)}
+.y-warn{border-color:rgba(201,168,76,.4);color:var(--gold);background:rgba(201,168,76,.07)}
+.y-bad{border-color:rgba(201,76,76,.4);color:#e07070;background:rgba(201,76,76,.07)}
+
+/* READING */
+.reading-wrap{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:22px;margin-bottom:16px;display:none}
+.reading-body{font-size:13.5px;color:#ccc4b8;line-height:1.95;white-space:pre-wrap;min-height:40px}
+.sec-head{display:block;color:var(--gold);font-weight:600;font-size:12px;letter-spacing:.5px;margin:18px 0 6px;border-left:2px solid var(--gold);padding-left:10px}
+.loading-row{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:12px 0}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pu 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes pu{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* MATCH */
+.match-scores{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0}
+.ms-item{background:#0a091a;border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center}
+.ms-item .mn{font-size:12px;color:var(--text)}
+.ms-item .mn-note{font-size:10px;color:var(--muted)}
+.ms-item .mv{font-size:13px;font-weight:600}
+.mv-pass{color:#4caf7a}.mv-fail{color:#e07070}.mv-avg{color:var(--gold)}
+.match-total-box{background:rgba(201,168,76,.07);border:0.5px solid rgba(201,168,76,.25);border-radius:10px;padding:18px;text-align:center;margin:12px 0}
+.mt-num{font-size:36px;font-weight:200;color:var(--gold)}
+.mt-pct{font-size:13px;color:var(--muted);margin-top:2px}
+.mt-verdict{font-size:14px;font-weight:500;margin-top:10px}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .grid-3,.grid-4{grid-template-columns:1fr 1fr}
+  .grid-2{grid-template-columns:1fr}
+  .info-grid{grid-template-columns:1fr 1fr}
+  .match-scores{grid-template-columns:1fr}
+  .si-chart{height:220px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="star-row"><span>✦ ✦ ✦</span></div>
+  <div class="logo">Jothidam</div>
+  <div class="logo-sub">Tamil Astrology · South Indian Jyotish</div>
+  <div class="star-row"><span>✦ ✦ ✦</span></div>
+</div>
+
+<div class="main">
+  <div class="tabs">
+    <button class="tab active" onclick="setMode('personal')">Personal Reading</button>
+    <button class="tab" onclick="setMode('match')">Marriage Match</button>
+  </div>
+
+  <!-- PERSONAL MODE -->
+  <div id="personalMode">
+    <div class="form-section">
+      <div class="form-title">Birth details</div>
+      <div class="grid-2" style="margin-bottom:12px">
+        <div class="field"><label>Full name *</label><input id="p_name" type="text" placeholder="Enter full name"></div>
+        <div class="field"><label>Gender</label>
+          <select id="p_gender"><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:12px">
+        <div class="field"><label>Date of birth *</label><input id="p_dob" type="date"></div>
+        <div class="field"><label>Time of birth *</label><input id="p_tob" type="time"></div>
+        <div class="field"><label>Place of birth *</label><input id="p_place" type="text" placeholder="Kottayam, Chennai..."></div>
+      </div>
+      <div class="grid-3" style="margin-bottom:12px">
+        <div class="field">
+          <label>Rasi (if known)</label>
+          <select id="p_rasi">
+            <option value="">Auto-calculate</option>
+            <option>Mesha</option><option>Rishabha</option><option>Mithuna</option><option>Kataka</option>
+            <option>Simha</option><option>Kanya</option><option>Tula</option><option>Vrischika</option>
+            <option>Dhanu</option><option>Makara</option><option>Kumbha</option><option>Meena</option>
+          </select>
+          <span class="field-note">Moon sign — leave blank to auto-detect</span>
+        </div>
+        <div class="field">
+          <label>Lagna (if known)</label>
+          <select id="p_lagna">
+            <option value="">Auto-calculate</option>
+            <option>Mesha</option><option>Rishabha</option><option>Mithuna</option><option>Kataka</option>
+            <option>Simha</option><option>Kanya</option><option>Tula</option><option>Vrischika</option>
+            <option>Dhanu</option><option>Makara</option><option>Kumbha</option><option>Meena</option>
+          </select>
+          <span class="field-note">Ascendant — very sensitive to birth time</span>
+        </div>
+        <div class="field">
+          <label>Nakshatra (if known)</label>
+          <select id="p_nak">
+            <option value="">Auto-calculate</option>
+            <option>Ashwini</option><option>Bharani</option><option>Krittika</option><option>Rohini</option>
+            <option>Mrigashira</option><option>Ardra</option><option>Punarvasu</option><option>Pushya</option>
+            <option>Ashlesha</option><option>Magha</option><option>Purva Phalguni</option><option>Uttara Phalguni</option>
+            <option>Hasta</option><option>Chitra</option><option>Swati</option><option>Vishakha</option>
+            <option>Anuradha</option><option>Jyeshtha</option><option>Mula</option><option>Purva Ashadha</option>
+            <option>Uttara Ashadha</option><option>Shravana</option><option>Dhanishtha</option><option>Shatabhisha</option>
+            <option>Purva Bhadrapada</option><option>Uttara Bhadrapada</option><option>Revati</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px">
+        <label>Specific question (optional)</label>
+        <input id="p_q" type="text" placeholder="e.g. When will I get a job? Marriage timing? Health concerns?">
+      </div>
+      <div id="personalErr" class="err"></div>
+      <button class="btn btn-primary" id="readBtn" onclick="generateReading()">Generate Reading ✦</button>
+    </div>
+  </div>
+
+  <!-- MATCH MODE -->
+  <div id="matchMode" style="display:none">
+    <div class="form-section">
+      <div class="form-title">Person 1</div>
+      <div class="grid-4" style="margin-bottom:12px">
+        <div class="field"><label>Name *</label><input id="m1_name" type="text" placeholder="Name"></div>
+        <div class="field"><label>Date of birth *</label><input id="m1_dob" type="date"></div>
+        <div class="field"><label>Time of birth</label><input id="m1_tob" type="time"></div>
+        <div class="field"><label>Place *</label><input id="m1_place" type="text" placeholder="City"></div>
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Rasi</label>
+          <select id="m1_rasi"><option value="">Auto</option>
+            <option>Mesha</option><option>Rishabha</option><option>Mithuna</option><option>Kataka</option>
+            <option>Simha</option><option>Kanya</option><option>Tula</option><option>Vrischika</option>
+            <option>Dhanu</option><option>Makara</option><option>Kumbha</option><option>Meena</option>
+          </select></div>
+        <div class="field"><label>Lagna</label>
+          <select id="m1_lagna"><option value="">Auto</option>
+            <option>Mesha</option><option>Rishabha</option><option>Mithuna</option><option>Kataka</option>
+            <option>Simha</option><option>Kanya</option><option>Tula</option><option>Vrischika</option>
+            <option>Dhanu</option><option>Makara</option><option>Kumbha</option><option>Meena</option>
+          </select></div>
+        <div class="field"><label>Nakshatra</label>
+          <select id="m1_nak"><option value="">Auto</option>
+            <option>Ashwini</option><option>Bharani</option><option>Krittika</option><option>Rohini</option>
+            <option>Mrigashira</option><option>Ardra</option><option>Punarvasu</option><option>Pushya</option>
+            <option>Ashlesha</option><option>Magha</option><option>Purva Phalguni</option><option>Uttara Phalguni</option>
+            <option>Hasta</option><option>Chitra</option><option>Swati</option><option>Vishakha</option>
+            <option>Anuradha</option><option>Jyeshtha</option><option>Mula</option><option>Purva Ashadha</option>
+            <option>Uttara Ashadha</option><option>Shravana</option><option>Dhanishtha</option><option>Shatabhisha</option>
+            <option>Purva Bhadrapada</option><option>Uttara Bhadrapada</option><option>Revati</option>
+          </select></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-title">Person 2</div>
+      <div class="grid-4" style="margin-bottom:12px">
+        <div class="field"><label>Name *</label><input id="m2_name" type="text" placeholder="Name"></div>
+        <div class="field"><label>Date of birth *</label><input id="m2_dob" type="date"></div>
+        <div class="field"><label>Time of birth</label><input id="m2_tob" type="time"></div>
+        <div class="field"><label>Place *</label><input id="m2_place" type="text" placeholder="City"></div>
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Rasi</label>
+          <select id="m2_rasi"><option value="">Auto</option>
+            <option>Mesha</option><option>Rishabha</option><option>Mithuna</option><option>Kataka</option>
+            <option>Simha</option><option>Kanya</option><option>Tula</option><option>Vrischika</option>
+            <option>Dhanu</option><option>Makara</option><option>Kumbha</option><option>Meena</option>
+          </select></div>
+        <div class="field"><label>Lagna</label>
+          <select id="m2_lagna"><option value="">Auto</option>
+            <option>Mesha</option><option>Rishabha</option><option>Mithuna</option><option>Kataka</option>
+            <option>Simha</option><option>Kanya</option><option>Tula</option><option>Vrischika</option>
+            <option>Dhanu</option><option>Makara</option><option>Kumbha</option><option>Meena</option>
+          </select></div>
+        <div class="field"><label>Nakshatra</label>
+          <select id="m2_nak"><option value="">Auto</option>
+            <option>Ashwini</option><option>Bharani</option><option>Krittika</option><option>Rohini</option>
+            <option>Mrigashira</option><option>Ardra</option><option>Punarvasu</option><option>Pushya</option>
+            <option>Ashlesha</option><option>Magha</option><option>Purva Phalguni</option><option>Uttara Phalguni</option>
+            <option>Hasta</option><option>Chitra</option><option>Swati</option><option>Vishakha</option>
+            <option>Anuradha</option><option>Jyeshtha</option><option>Mula</option><option>Purva Ashadha</option>
+            <option>Uttara Ashadha</option><option>Shravana</option><option>Dhanishtha</option><option>Shatabhisha</option>
+            <option>Purva Bhadrapada</option><option>Uttara Bhadrapada</option><option>Revati</option>
+          </select></div>
+      </div>
+    </div>
+    <div id="matchErr" class="err"></div>
+    <button class="btn btn-primary" id="matchBtn" onclick="generateMatch()">Calculate Match ✦</button>
+  </div>
+
+  <!-- OUTPUT: Chart -->
+  <div class="chart-wrap" id="chartWrap">
+    <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start;flex-wrap:wrap">
+      <div>
+        <div class="section-title">Janma Kundali</div>
+        <div class="si-chart" id="siChart"></div>
+      </div>
+      <div>
+        <div class="section-title">Chart details</div>
+        <div class="info-grid" id="infoGrid"></div>
+      </div>
+    </div>
+    <div style="margin-top:18px">
+      <div class="section-title">All 9 Grahas</div>
+      <table class="pt">
+        <thead><tr><th>Graha</th><th>Rasi</th><th>Deg</th><th>House</th><th>Status</th><th>Nakshatra</th></tr></thead>
+        <tbody id="planetTbody"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:18px" id="dashaSection"></div>
+    <div style="margin-top:16px" id="yogaSection"></div>
+  </div>
+
+  <!-- OUTPUT: Match scores -->
+  <div class="chart-wrap" id="matchWrap">
+    <div class="section-title">Marriage Compatibility — 10 Poruthams</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div class="ic" id="matchPerson1"></div>
+      <div class="ic" id="matchPerson2"></div>
+    </div>
+    <div class="match-scores" id="matchScores"></div>
+    <div class="match-total-box" id="matchTotal"></div>
+  </div>
+
+  <!-- OUTPUT: Reading -->
+  <div class="reading-wrap" id="readingWrap">
+    <div class="section-title" id="readingTitle">Astrologer's Reading</div>
+    <div class="reading-body" id="readingBody"></div>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let currentMode = 'personal';
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (m==='personal'&&i===0)||(m==='match'&&i===1)));
+  document.getElementById('personalMode').style.display = m==='personal'?'block':'none';
+  document.getElementById('matchMode').style.display    = m==='match'?'block':'none';
+  ['chartWrap','matchWrap','readingWrap'].forEach(id => document.getElementById(id).style.display='none');
+}
+
+function showErr(id, msg) { const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
+function hideErr(id) { document.getElementById(id).style.display='none'; }
+
+const RASI_LIST = ['Mesha','Rishabha','Mithuna','Kataka','Simha','Kanya','Tula','Vrischika','Dhanu','Makara','Kumbha','Meena'];
+// South Indian chart layout (fixed grid - Mesha always top-left second cell)
+const SI_LAYOUT = [
+  ['Meena','Mesha','Rishabha','Mithuna'],
+  ['Kumbha',null,null,'Kataka'],
+  ['Makara',null,null,'Simha'],
+  ['Dhanu','Vrischika','Tula','Kanya']
+];
+
+function renderSIChart(chart) {
+  const lagnaRasi = chart.lagna.rasi;
+  const el = document.getElementById('siChart');
+  let html = '';
+  const occupied = {};
+  for (const [name, p] of Object.entries(chart.planets)) {
+    if (!occupied[p.rasi]) occupied[p.rasi] = [];
+    occupied[p.rasi].push({ name, status: p.status });
+  }
+
+  SI_LAYOUT.forEach((row, ri) => {
+    row.forEach((rasi, ci) => {
+      if (rasi === null) {
+        if (ri===1 && ci===1) {
+          html += `<div class="si-cell center" style="grid-column:2/4;grid-row:2/4">
+            <div style="font-size:8px;color:var(--muted2);letter-spacing:1px;text-align:center;line-height:1.6">
+              ${lagnaRasi}<br>LAGNA
+            </div>
+          </div>`;
+        }
+        return;
+      }
+      const houseNum = ((RASI_LIST.indexOf(rasi) - RASI_LIST.indexOf(lagnaRasi) + 12) % 12) + 1;
+      const isLagna = rasi === lagnaRasi;
+      const planets = occupied[rasi] || [];
+      let ptags = '';
+      if (isLagna) ptags += `<span class="ptag ptag-lag">Lag</span>`;
+      planets.forEach(p => {
+        const ex = p.status.includes('Exalted') || p.status.includes('Own');
+        const rk = p.name==='Rahu'||p.name==='Ketu';
+        const cls = rk?'ptag-rk':ex?'ptag-ex':'ptag-p';
+        ptags += `<span class="ptag ${cls}">${p.name.slice(0,3)}</span>`;
+      });
+      html += `<div class="si-cell">
+        <div class="hn">H${houseNum}</div>
+        <div class="rsn">${rasi.slice(0,3)}</div>
+        <div class="ptags">${ptags}</div>
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+function renderInfoGrid(chart) {
+  const el = document.getElementById('infoGrid');
+  const moon = chart.planets.Moon;
+  const dasha = chart.dasha.current;
+  el.innerHTML = `
+    <div class="ic"><div class="l">Lagna</div><div class="v">${chart.lagna.rasi}</div><div class="s">Lord: ${chart.lagna.lord} H${chart.lagna.lordHouse}</div></div>
+    <div class="ic"><div class="l">Rasi</div><div class="v">${chart.rasi.name}</div><div class="s">Lord: ${chart.rasi.lord}</div></div>
+    <div class="ic"><div class="l">Nakshatra</div><div class="v">${chart.nakshatra.name}</div><div class="s">${chart.nakshatra.tamil}</div></div>
+    <div class="ic"><div class="l">Pada</div><div class="v">${chart.nakshatra.pada}</div><div class="s">${['','Mesha','Rishabha','Mithuna','Kataka'][chart.nakshatra.pada]} Navamsa</div></div>
+    <div class="ic"><div class="l">Nak Lord</div><div class="v">${chart.nakshatra.lord}</div><div class="s">H${chart.planets[chart.nakshatra.lord]?.house}</div></div>
+    <div class="ic"><div class="l">Gana / Nadi</div><div class="v">${chart.nakshatra.gana}</div><div class="s">${chart.nakshatra.nadi} Nadi</div></div>
+    ${dasha?`<div class="ic" style="grid-column:1/-1"><div class="l">Current Dasha</div><div class="v">${dasha.lord} Mahadasha</div><div class="s">${dasha.startDate} → ${dasha.endDate}</div></div>`:''}
+  `;
+}
+
+function renderPlanetTable(chart) {
+  const tbody = document.getElementById('planetTbody');
+  const rows = Object.entries(chart.planets).map(([name, p]) => {
+    const stClass = p.status.includes('Exalted')?'st-ex':p.status.includes('Own')?'st-own':p.status.includes('Debil')?'st-deb':'st-n';
+    return `<tr>
+      <td>${name}</td>
+      <td style="color:var(--gold2);font-weight:500">${p.rasi}</td>
+      <td>${p.degInRasi.toFixed(2)}°</td>
+      <td><span class="hb">H${p.house}</span></td>
+      <td class="${stClass}">${p.status}</td>
+      <td style="color:var(--muted)">${p.nakshatra||''} ${p.pada?'P'+p.pada:''}</td>
+    </tr>`;
+  }).join('');
+  tbody.innerHTML = rows;
+}
+
+function renderDasha(chart) {
+  const dasha = chart.dasha;
+  const cur = dasha.current;
+  if (!cur) return;
+  const startMs = new Date(cur.startDate).getTime();
+  const endMs   = new Date(cur.endDate).getTime();
+  const nowMs   = Date.now();
+  const pct     = Math.min(100, Math.round((nowMs-startMs)/(endMs-startMs)*100));
+
+  const curAntar = dasha.currentAntar;
+  const antarRows = dasha.antardashas.map(a =>
+    `<div style="display:flex;gap:8px;font-size:11px;padding:3px 0;${a===curAntar?'color:var(--gold2)':'color:var(--muted)'}">
+      <span style="min-width:130px">${cur.lord}–${a.lord} Bhukti</span>
+      <span>${a.startDate} → ${a.endDate}</span>
+      ${a===curAntar?'<span style="color:var(--gold);font-size:10px">← Now</span>':''}
+    </div>`
+  ).join('');
+
+  const pastRows = dasha.dashaSequence.filter(d=>new Date(d.endDate)<new Date()).slice(-4)
+    .map(d=>`<span style="font-size:11px;color:var(--muted)">${d.lord} (${d.startDate.slice(0,4)}–${d.endDate.slice(0,4)})</span>`)
+    .join(' → ');
+
+  document.getElementById('dashaSection').innerHTML = `
+    <div class="section-title">Vimshottari Dasha</div>
+    <div class="dasha-block">
+      <div class="dasha-row">
+        <span class="dl">Mahadasha</span>
+        <span class="dv">${cur.lord}</span>
+        <span class="ds">${cur.startDate} → ${cur.endDate}</span>
+      </div>
+      <div class="pbar"><div class="pbf" style="width:${pct}%"></div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${pct}% elapsed</div>
+    </div>
+    ${curAntar?`<div class="dasha-block">
+      <div class="dasha-row">
+        <span class="dl">Antardasha</span>
+        <span class="dv">${cur.lord}–${curAntar.lord} Bhukti</span>
+        <span class="ds">${curAntar.startDate} → ${curAntar.endDate}</span>
+      </div>
+    </div>`:''}
+    <div style="background:#0a091a;border:0.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:7px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">All Antardashas in ${cur.lord} Period</div>
+      ${antarRows}
+    </div>
+    <div style="font-size:11px;color:var(--muted);line-height:1.8;margin-top:4px">
+      <strong style="color:var(--muted2)">Past:</strong> ${pastRows}
+    </div>`;
+}
+
+function renderYogas(chart) {
+  const tags = chart.yogas.map(y => {
+    const cls = y.type==='good'?'y-good':y.type==='bad'?'y-bad':'y-warn';
+    return `<span class="ytag ${cls}" title="${y.desc}">${y.name}</span>`;
+  }).join('');
+  document.getElementById('yogaSection').innerHTML = `
+    <div class="section-title">Yogas & Doshas</div>
+    <div class="yoga-grid">${tags}</div>
+    <div style="margin-top:10px">
+      ${chart.yogas.map(y=>`<div style="font-size:11px;color:var(--muted);padding:3px 0;border-bottom:0.5px solid var(--border)">
+        <span style="color:${y.type==='good'?'#4caf7a':y.type==='bad'?'#e07070':'var(--gold)'}">✦ ${y.name}</span> — ${y.desc}
+      </div>`).join('')}
+    </div>`;
+}
+
+function renderChart(chart) {
+  document.getElementById('chartWrap').style.display = 'block';
+  renderSIChart(chart);
+  renderInfoGrid(chart);
+  renderPlanetTable(chart);
+  renderDasha(chart);
+  renderYogas(chart);
+}
+
+function formatReading(text) {
+  return text
+    .replace(/===\s*(.+?)\s*===/g, '<span class="sec-head">✦ $1</span>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--gold2)">$1</strong>')
+    .replace(/\*([^*\n]+)\*/g, '<em style="color:var(--muted)">$1</em>');
+}
+
+async function generateReading() {
+  hideErr('personalErr');
+  const name  = document.getElementById('p_name').value.trim();
+  const gender= document.getElementById('p_gender').value;
+  const dob   = document.getElementById('p_dob').value;
+  const tob   = document.getElementById('p_tob').value;
+  const place = document.getElementById('p_place').value.trim();
+  const rasi  = document.getElementById('p_rasi').value;
+  const lagna = document.getElementById('p_lagna').value;
+  const nak   = document.getElementById('p_nak').value;
+  const q     = document.getElementById('p_q').value.trim();
+
+  if (!name)  return showErr('personalErr','Please enter name');
+  if (!dob)   return showErr('personalErr','Please enter date of birth');
+  if (!tob)   return showErr('personalErr','Please enter time of birth');
+  if (!place) return showErr('personalErr','Please enter place of birth');
+
+  const btn = document.getElementById('readBtn');
+  btn.disabled = true; btn.textContent = 'Calculating...';
+
+  ['chartWrap','readingWrap','matchWrap'].forEach(id => document.getElementById(id).style.display='none');
+
+  const readingWrap = document.getElementById('readingWrap');
+  const readingBody = document.getElementById('readingBody');
+  readingWrap.style.display = 'block';
+  readingBody.innerHTML = `<div class="loading-row"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Computing chart & consulting the stars... (takes ~20 seconds)</span></div>`;
+
+  try {
+    const resp = await fetch('/api/reading', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, gender, dob, tob, place,
+        rasi: rasi||undefined, lagna: lagna||undefined,
+        nakshatra: nak||undefined, question: q||undefined })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      throw new Error(err.error || 'Server error ' + resp.status);
+    }
+
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+
+    renderChart(data.chart);
+    document.getElementById('chartWrap').style.display = 'block';
+    readingBody.innerHTML = formatReading(data.reading);
+    readingWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch(e) {
+    showErr('personalErr', 'Error: ' + e.message);
+    readingBody.innerHTML = `<div style="color:var(--muted);font-size:13px">Could not generate reading. Please check all fields and try again.</div>`;
+  }
+
+  btn.disabled = false; btn.textContent = 'Generate Reading ✦';
+}
+
+async function generateMatch() {
+  hideErr('matchErr');
+  const p1 = {
+    name:  document.getElementById('m1_name').value.trim(),
+    dob:   document.getElementById('m1_dob').value,
+    tob:   document.getElementById('m1_tob').value || '06:00',
+    place: document.getElementById('m1_place').value.trim(),
+    rasi:  document.getElementById('m1_rasi').value || undefined,
+    lagna: document.getElementById('m1_lagna').value || undefined,
+    nakshatra: document.getElementById('m1_nak').value || undefined,
+  };
+  const p2 = {
+    name:  document.getElementById('m2_name').value.trim(),
+    dob:   document.getElementById('m2_dob').value,
+    tob:   document.getElementById('m2_tob').value || '06:00',
+    place: document.getElementById('m2_place').value.trim(),
+    rasi:  document.getElementById('m2_rasi').value || undefined,
+    lagna: document.getElementById('m2_lagna').value || undefined,
+    nakshatra: document.getElementById('m2_nak').value || undefined,
+  };
+
+  if (!p1.name || !p2.name) return showErr('matchErr','Please enter both names');
+  if (!p1.dob  || !p2.dob)  return showErr('matchErr','Please enter both dates of birth');
+  if (!p1.place|| !p2.place) return showErr('matchErr','Please enter both places of birth');
+
+  const btn = document.getElementById('matchBtn');
+  btn.disabled = true; btn.textContent = 'Calculating...';
+  ['chartWrap','matchWrap','readingWrap'].forEach(id=>document.getElementById(id).style.display='none');
+
+  const readingWrap = document.getElementById('readingWrap');
+  const readingBody = document.getElementById('readingBody');
+  readingWrap.style.display='block';
+  readingBody.innerHTML=`<div class="loading-row"><div class="dot"></div><div class="dot"></div><div class="dot"></div><span>Calculating compatibility... (takes ~20 seconds)</span></div>`;
+
+  try {
+    const resp = await fetch('/api/match', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ person1: p1, person2: p2 })
+    });
+    if (!resp.ok) { const e=await resp.json(); throw new Error(e.error||'Server error'); }
+
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+
+    renderMatchScores(data.chart1, data.chart2, p1, p2, data.matchResult);
+    readingBody.innerHTML = formatReading(data.reading);
+    readingWrap.scrollIntoView({ behavior:'smooth', block:'start' });
+
+  } catch(e){
+    showErr('matchErr','Error: '+e.message);
+    readingBody.innerHTML='';
+  }
+  btn.disabled=false; btn.textContent='Calculate Match ✦';
+}
+
+function renderMatchScores(c1, c2, p1, p2, mr) {
+  document.getElementById('matchWrap').style.display='block';
+  document.getElementById('matchPerson1').innerHTML=`<div class="l">${p1.name}</div><div class="v">${c1.nakshatra.name} · ${c1.rasi.name}</div><div class="s">Lagna: ${c1.lagna.rasi}</div>`;
+  document.getElementById('matchPerson2').innerHTML=`<div class="l">${p2.name}</div><div class="v">${c2.nakshatra.name} · ${c2.rasi.name}</div><div class="s">Lagna: ${c2.lagna.rasi}</div>`;
+
+  const scoresHTML = Object.entries(mr.results).map(([name,r])=>{
+    const cls = r.pass?'mv-pass':r.score>0?'mv-avg':'mv-fail';
+    return `<div class="ms-item">
+      <div><div class="mn">${name}${r.critical?' ⚠':''}  </div><div class="mn-note">${r.note}</div></div>
+      <div class="mv ${cls}">${r.score}/${r.max}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('matchScores').innerHTML=scoresHTML;
+
+  const verdictColor = mr.pct>=75?'#4caf7a':mr.pct>=50?'var(--gold)':'#e07070';
+  document.getElementById('matchTotal').innerHTML=`
+    <div class="mt-num">${mr.totalScore}<span style="font-size:18px;color:var(--muted)">/${mr.maxScore}</span></div>
+    <div class="mt-pct">${mr.pct}% compatibility</div>
+    <div class="mt-verdict" style="color:${verdictColor}">${mr.verdict} — ${mr.recommendation}</div>
+    ${mr.criticalFails.length?`<div style="margin-top:8px;font-size:11px;color:#e07070">Critical issues: ${mr.criticalFails.join(', ')}</div>`:''}`;
+}
+</script>
+</body>
+</html>
