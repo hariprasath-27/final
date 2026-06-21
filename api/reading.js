@@ -6,7 +6,17 @@ const { buildReadingPrompt } = require('./prompts');
  
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
  
-const SYSTEM = `You are Jothida Pandithar — the most respected Tamil Jyotish astrologer alive, with 40 years of practice. Families travel from distant villages to sit before you. Your reputation rests on one thing: accuracy. Every single sentence you write must name the exact planet, exact house number, and exact astrological reason. You speak directly to the person as "you". You never write vague statements. You never leave a section incomplete. You write in flowing paragraphs — no bullet points anywhere. Use === SECTION === for main headings and --- Sub Heading --- for sub-topics inside sections. CRITICAL: Always complete every sentence fully. If you are approaching the token limit, finish the current sentence and wrap up the current paragraph cleanly. Never stop mid-sentence, mid-word, or mid-thought. End at a natural paragraph boundary.`;
+const SYSTEM = `You are Jothida Pandithar — the most respected Tamil Jyotish astrologer alive, with 40 years of practice. Families travel from distant villages to sit before you. Your reputation rests entirely on accuracy and depth.
+ 
+HOW YOU WRITE:
+- Speak directly to the person as "you" — warm, personal, like a trusted elder who knows them deeply
+- Every paragraph must be at least 100 words — rich, detailed, specific
+- Weave astrological reasons naturally into insights — do not say "because Sun is in H10" mechanically. Instead say "Your career carries a quiet authority that others sense before you even speak — this comes from the Sun's placement in your 10th house of public life." The planet and house are mentioned but the INSIGHT comes first
+- Never write vague statements. If you say something will happen, say when, why, and what it will feel like
+- Write in flowing paragraphs — no bullet points anywhere
+- Use === SECTION === for main headings and --- Sub Heading --- for sub-topics inside sections
+- Do not introduce sections with "In this section I will..." — just begin the content directly
+- CRITICAL: Always complete every sentence and paragraph fully. If approaching the token limit, finish the current thought cleanly at a natural paragraph boundary. Never stop mid-sentence or mid-word.`;
  
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin","*");
@@ -46,135 +56,135 @@ module.exports = async function handler(req, res) {
     // All 8 calls run in parallel simultaneously
     const [r1,r2,r3,r4,r5,r6,r7,r8] = await Promise.all([
  
-      // CALL 1 — Appearance + Character + Emotional Nature
-      call(`Write ONLY this section. Start directly with === header. No intro.
+      // CALL 1 — Who You Are
+      call(`Write ONLY this section. Start directly with === header. No intro. Every paragraph must be at least 100 words — rich, detailed, giving real insights not mechanical statements.
  
 === WHO YOU ARE ===
  
 --- Physical Appearance ---
-Write 2 paragraphs. State exact height tendency, body build, skin tone, facial features, hair, eyes, and physical bearing — all derived from ${chart.lagna.rasi} Lagna at ${chart.lagna.degInRasi.toFixed(1)}° with lord ${chart.lagna.lord} in H${chart.lagna.lordHouse} (${chart.lagna.lordStatus}). Also state the family background and social environment you were born into based on the 4th house (${chart.houses[4]?.join(',')||'Empty'}) and 9th house (${chart.houses[9]?.join(',')||'Empty'}).
+Write 2 paragraphs describing how this person looks and carries themselves — height, build, skin tone, facial features, hair, eyes, posture, the impression they make. Draw from ${chart.lagna.rasi} Lagna with lord ${chart.lagna.lord} in H${chart.lagna.lordHouse} (${chart.lagna.lordStatus}). In the second paragraph describe the family background, home environment they grew up in, social class and values of their family, based on H4 (${chart.houses[4]?.join(',')||'Empty'}) and H9 (${chart.houses[9]?.join(',')||'Empty'}).
  
---- Emotional Nature & Personality Traits ---
-Write 3 paragraphs. Cover Moon in H${p.Moon?.house} ${p.Moon?.rasi} (${p.Moon?.status}) and ${chart.nakshatra.name} Nakshatra ruled by ${chart.nakshatra.lord} — what kind of person you are emotionally, how you respond to love, conflict, stress, loneliness. Cover the spiritual side — are you naturally drawn to God, temples, service? Cover the characteristic mistakes this person tends to make in life repeatedly due to their planetary nature.
+--- Emotional Nature & Personality ---
+Write 3 paragraphs. First: how this person loves, reacts to conflict, handles loneliness and stress, what they need to feel secure — from Moon H${p.Moon?.house} ${p.Moon?.rasi} and ${chart.nakshatra.name} Nakshatra. Second: their spiritual nature — are they drawn to God and temples naturally or does spirituality come later? How deep is their faith and dharmic sense? Third: the characteristic mistakes this person makes repeatedly in life — the patterns they fall into, what they need to consciously work against.
  
 --- Strengths & Weaknesses ---
-Write 2 paragraphs. First paragraph: every real strength in this chart — which planet in which house gives what strength, and what this allows you to achieve in life. Second paragraph: every genuine weakness — which planet in which house creates what blind spot, weakness, or recurring failure pattern. Be honest and specific.`, 3000),
+Write 2 paragraphs. First: every genuine strength this person has — what they can achieve that others cannot, what gifts the planets have placed in their hands, what real-life outcomes these strengths produce. Second: every genuine weakness — the recurring failure patterns, the blind spots that keep creating the same problems, where they self-sabotage. Be honest and specific without being harsh.`, 4000),
  
-      // CALL 2 — Past life summary + Present life in detail
-      call(`Write ONLY this section. Start directly with === header. No intro.
+      // CALL 2 — Past & Present
+      call(`Write ONLY this section. Start directly with === header. No intro. Every paragraph must be at least 100 words.
  
-=== PAST LIFE & WHAT HAS HAPPENED ===
+=== PAST — WHAT LIFE HAS GIVEN SO FAR ===
  
---- Past Dasha Periods (brief summary) ---
-Write 2 paragraphs covering all past Dasha periods as a quick summary. What kind of childhood, what education years were like, what early adult years brought. Key turning points only — do not go into every sub-period. State the years and ages clearly.
+--- Childhood & Growing Years ---
+Write 2 paragraphs summarising the past Dasha periods quickly. What kind of childhood was this — secure or turbulent, academically strong or difficult, emotionally warm or distant? What were the school and college years like? What shaped this person most deeply in their first 20 years? Give real texture and turning points with approximate years and ages.
  
---- Karma & Past Life Indicators ---
-Write 1 paragraph on what Ketu in H${p.Ketu?.house} ${p.Ketu?.rasi} and Rahu in H${p.Rahu?.house} ${p.Rahu?.rasi} reveal about past life karma and what this life is meant to resolve or achieve.
+--- Karma & What This Life Is For ---
+Write 1 paragraph on what Ketu H${p.Ketu?.house} ${p.Ketu?.rasi} and Rahu H${p.Rahu?.house} ${p.Rahu?.rasi} reveal. What did this soul master in past lives and what has it come to learn and achieve in this one? What is the central karmic theme of this lifetime?
  
-=== PRESENT LIFE — WHAT IS HAPPENING RIGHT NOW ===
+=== PRESENT — WHAT IS HAPPENING RIGHT NOW ===
  
---- The Current Dasha Period: ${curM} Mahadasha, ${curA} Bhukti ---
-Write 3 paragraphs. Explain ${curM} in H${p[curM]?.house} ${p[curM]?.rasi} (${p[curM]?.status}) and what it activates as Mahadasha lord. Then explain ${curA} in H${p[curA]?.house} ${p[curA]?.rasi} (${p[curA]?.status}) and what the Bhukti is specifically adding right now. Be very precise about what is happening in this person's life at this exact moment.
+--- The ${curM} Mahadasha, ${curA} Bhukti ---
+Write 3 paragraphs. First: what ${curM} in H${p[curM]?.house} ${p[curM]?.rasi} (${p[curM]?.status}) means as the ruling Dasha lord — what areas of life it is activating, what themes it brings, what it is asking of this person. Second: what ${curA} in H${p[curA]?.house} ${p[curA]?.rasi} (${p[curA]?.status}) adds as the Bhukti lord right now — how it interacts with the Mahadasha, what it specifically opens or closes. Third: a precise picture of what is actually happening in this person's life at this exact moment — career, relationships, finances, inner state.
  
---- What To Expect Right Now: Changes, Good & Bad ---
-Write 3 paragraphs. What changes are happening or about to happen in the next 12 months. What good things are opening up right now and what bad things need to be navigated carefully. Cover career changes, relationship shifts, financial movements, health signals — all based on the current Dasha combination and transits.`, 3500),
+--- Changes Coming in the Next 12 Months ---
+Write 3 paragraphs covering what is shifting in this person's life right now and in the coming year. What good things are opening — which doors, which opportunities, which relationships. What needs caution — what risks exist, what could go wrong, what to avoid. Cover career, money, relationships, and health signals.`, 4000),
  
-      // CALL 3 — Career + Wealth
-      call(`Write ONLY this section. Start directly with === header. No intro.
+      // CALL 3 — Career & Money
+      call(`Write ONLY this section. Start directly with === header. No intro. Every paragraph must be at least 100 words.
  
 === CAREER & MONEY ===
  
 --- Natural Profession & Talents ---
-Write 2 paragraphs. Based on H10 (${chart.houses[10]?.join(',')||'Empty'}), 10th lord in H${p[chart.rasi.lord]?.house}, Sun H${p.Sun?.house} ${p.Sun?.status}, Mercury H${p.Mercury?.house} ${p.Mercury?.status}, and Saturn H${p.Saturn?.house} ${p.Saturn?.status} — what exact profession is written in this chart, what talents come naturally, what fields will always suit this person.
+Write 2 paragraphs. What profession is genuinely written in this chart — not a generic list but the actual field that suits this person's planetary makeup. What talents come so naturally they feel effortless? What kind of work makes this person feel alive? Draw from H10 (${chart.houses[10]?.join(',')||'Empty'}), Sun H${p.Sun?.house} ${p.Sun?.status}, Mercury H${p.Mercury?.house} ${p.Mercury?.status}, Saturn H${p.Saturn?.house} ${p.Saturn?.status}.
  
 --- Career Right Now (Age ${age}) ---
-Write 2 paragraphs on what is happening in career at this exact age, what the current Dasha (${curM}-${curA}) is doing to career, whether this is a growth period or a slow period, and what immediate actions will yield results.
+Write 2 paragraphs on what is happening in this person's career at this exact age under the ${curM}-${curA} Dasha. Is this a growth period or a consolidation period or a difficult patch? What should this person be doing right now to move forward? What specific actions will yield results in the next 6-12 months?
  
---- Career Timeline ---
-Write 3 paragraphs covering career decade by decade — when career starts moving, when the big breakthrough comes (which Dasha, which year, approximate age), what the peak career years look like, and what career looks like after age 50.
+--- Career Through the Decades ---
+Write 3 paragraphs covering career decade by decade. When does career genuinely take off — which Dasha, which age? When does the big breakthrough arrive? What does the peak career period look like — what position, what income, what recognition? What does career look like after 50 — still active or winding down?
  
---- Wealth & Finances ---
-Write 3 paragraphs. How wealth comes to this person based on H2 (${chart.houses[2]?.join(',')||'Empty'}), H11 (${chart.houses[11]?.join(',')||'Empty'}), Jupiter H${p.Jupiter?.house} ${p.Jupiter?.status}. When the best financial years come. When lean periods hit. Whether this person accumulates wealth steadily or in sudden bursts. Property, savings, and investment picture.`, 3500),
+--- Wealth & Property ---
+Write 3 paragraphs. How wealth comes to this person based on H2 (${chart.houses[2]?.join(',')||'Empty'}), H11 (${chart.houses[11]?.join(',')||'Empty'}), Jupiter H${p.Jupiter?.house} ${p.Jupiter?.status}. When are the best financial years and why? When are lean periods and how lean? What about property — when does home or land ownership happen, what kind of property? What is the overall financial arc of this life?`, 4000),
  
-      // CALL 4 — Marriage & Children (detailed)
-      call(`Write ONLY this section. Start directly with === header. No intro.
+      // CALL 4 — Marriage & Children
+      call(`Write ONLY this section. Start directly with === header. No intro. Every paragraph must be at least 100 words.
  
 === MARRIAGE & CHILDREN ===
  
---- Your Life Partner: Who They Will Be ---
-Write 3 paragraphs. Based on H7 (${chart.houses[7]?.join(',')||'Empty'}), 7th lord position, Venus H${p.Venus?.house} ${p.Venus?.status}, Jupiter H${p.Jupiter?.house} ${p.Jupiter?.status} — describe the nature, character, profession, physical appearance, and family background of the destined life partner. What qualities they will have. How they will complement or challenge this person.
+--- Your Life Partner ---
+Write 3 paragraphs describing the destined life partner in real terms — not abstract qualities but what kind of person they will actually be. What is their nature, their character, their profession? What will they look like? What family background will they come from? How will they complement this person and where will they create friction? Draw from H7 (${chart.houses[7]?.join(',')||'Empty'}), Venus H${p.Venus?.house} ${p.Venus?.status}, Jupiter H${p.Jupiter?.house} ${p.Jupiter?.status}.
  
---- Love or Arranged? What Parents Will Say ---
-Write 2 paragraphs. Will this be a love marriage or arranged? What does the chart show about how the meeting will happen? What will parents' attitude be — will they support it or oppose it? If there is opposition, from which side and why? Will the marriage eventually get family blessing?
+--- Love or Arranged? What Will Parents Say? ---
+Write 2 paragraphs. Will this be a love marriage or an arranged one — what does the chart show about how the meeting will happen? What will parents' attitude be — supportive or resistant? If resistance, from which side and what will the specific concern be? Will it eventually get family blessing and what will make that happen?
  
 --- Marriage Timing ---
-Write 2 paragraphs. Exactly which Dasha period and approximate year marriage will happen. What the best window is. If there are delays, explain why and until when. Any specific age range that is most auspicious.
+Write 2 paragraphs. Exactly which Dasha period and approximate year is most likely for marriage. What is the best age window? If there are delays, why exactly and until what point? What would trigger the delay to resolve?
  
---- Will It Last? Compatibility & Issues ---
-Write 2 paragraphs. What the married life will actually be like — the harmony, the friction points, the recurring disagreements. Will this marriage be long and stable or will there be serious issues? What periods within the marriage will be most challenging and why.
+--- Married Life: Will It Last? ---
+Write 2 paragraphs. What will married life actually feel like — the daily harmony, the recurring friction points, the way this couple handles conflict and love over time. Will this marriage grow stronger with years or will pressure build? What are the most challenging periods within the marriage and what would cause them?
  
---- Children: When, How Many, What Kind ---
-Write 2 paragraphs. Based on H5 (${chart.houses[5]?.join(',')||'Empty'}), Jupiter H${p.Jupiter?.house}, Mars H${p.Mars?.house} — when children will come, how many, timing of first child, nature of children (their personality, their success in life). Any concerns about conception or pregnancy.`, 4000),
+--- Children ---
+Write 2 paragraphs. When will children come, how many are indicated, and what is the timing of the first child? What kind of children — their nature, their intelligence, their life path? Any concerns around conception or pregnancy from H5 (${chart.houses[5]?.join(',')||'Empty'}) and Jupiter H${p.Jupiter?.house}?`, 4000),
  
       // CALL 5 — Health
-      call(`Write ONLY this section. Start directly with === header. No intro.
+      call(`Write ONLY this section. Start directly with === header. No intro. Every paragraph must be at least 100 words.
  
 === HEALTH ===
  
 --- Physical Constitution ---
-Write 2 paragraphs. Body type and fundamental constitution from ${chart.lagna.rasi} Lagna and ${chart.nakshatra.nadi} Nadi. Natural immunity level. What this person's energy is like — high, medium, or fragile. How they recover from illness.
+Write 2 paragraphs. What is this person's fundamental body type and constitution from ${chart.lagna.rasi} Lagna and ${chart.nakshatra.nadi} Nadi? Is their immunity naturally strong or fragile? What is their typical energy level — consistently high, moderate, or prone to crashes? How do they recover from illness — fast or slow? What lifestyle suits them physically?
  
---- Disease Tendencies & Body Parts to Watch ---
-Write 3 paragraphs. Based on H6 (${chart.houses[6]?.join(',')||'Empty'}), H8 (${chart.houses[8]?.join(',')||'Empty'}), and the positions of Sun H${p.Sun?.house}, Mars H${p.Mars?.house}, Saturn H${p.Saturn?.house} — name every specific disease tendency, every body part that is vulnerable, every organ system that needs monitoring. Be medically specific — name actual diseases, not vague categories.
+--- Disease Tendencies & What to Watch ---
+Write 3 paragraphs. Name every specific disease tendency and every organ system that is vulnerable based on H6 (${chart.houses[6]?.join(',')||'Empty'}), H8 (${chart.houses[8]?.join(',')||'Empty'}), Sun H${p.Sun?.house}, Mars H${p.Mars?.house}, Saturn H${p.Saturn?.house}. Do not be vague — name actual conditions, actual body parts, actual medical concerns this person should be monitoring. What are the early warning signs they should never ignore?
  
 --- Mental & Emotional Health ---
-Write 2 paragraphs. Moon in H${p.Moon?.house} ${p.Moon?.status} — what the mind is like under stress, whether anxiety or depression is a risk, how this person's emotional state affects physical health, and what they need to do to maintain mental balance.
+Write 2 paragraphs. What is this person's mind like under sustained stress — do they shut down, explode, or internalize? Is anxiety or depression a genuine risk in this chart? How does their emotional state affect their physical body? What specific practices or routines will keep their mental health stable?
  
---- Health Timeline: Danger Periods ---
-Write 2 paragraphs. Which Dasha periods historically and coming up need health care. What ages are most vulnerable. What preventive actions to take now.`, 3000),
+--- Health Danger Periods ---
+Write 2 paragraphs. Which Dasha periods in the past have already been health challenges and which ones coming up need the most care? What exact ages are most vulnerable? What preventive action should be taken now to prepare for the difficult periods ahead?`, 4000),
  
-      // CALL 6 — Future 10-20 years by groups of 3 years
-      call(`Write ONLY this section. Start directly with === header. No intro. This is the most important section. Complete every period fully without stopping.
+      // CALL 6 — Future 20 years
+      call(`Write ONLY this section. Start directly with === header. No intro. Every paragraph must be at least 100 words. Complete every period — do not stop before ${yr+20}.
  
-=== FUTURE: NEXT 20 YEARS — GROUPED BY MAJOR LIFE PHASES ===
+=== THE NEXT 20 YEARS ===
  
---- ${yr} to ${yr+3}: What These Years Mean ---
-Write 3 paragraphs. Which Dashas run during this period, what major life events are indicated, what changes in career, money, relationships, and health. What decisions made in this window will shape the next decade. Good things coming and things to be careful about.
+--- ${yr} to ${yr+3} ---
+Write 3 paragraphs. Which Dashas and Bhuktis run during this window? What are the major life events indicated — in career, relationships, finances, health, family? What decisions made now will shape the next decade? What is opening and what needs caution?
  
---- ${yr+3} to ${yr+6}: What These Years Mean ---
-Write 3 paragraphs. Which Dashas, what major shifts, what opens up, what gets tested. Key events — promotion, marriage, children, property, travel — that belong in this window. What to build toward.
+--- ${yr+3} to ${yr+6} ---
+Write 3 paragraphs. What shifts in this period? Which new Dashas begin and what do they activate? Key milestones — promotion, marriage, first child, property, travel abroad — where do they fall in this window? What should be built and pursued during these years?
  
---- ${yr+6} to ${yr+10}: The Mid-Phase ---
-Write 3 paragraphs. How life looks by this point — career position, family situation, financial stability. What challenges come in this phase. What rewards from earlier hard work arrive. Which area of life dominates this period.
+--- ${yr+6} to ${yr+10} ---
+Write 3 paragraphs. How does life look by this point — career position, family situation, financial stability, personal growth? What major challenges arrive in this phase and why astrologically? What rewards from earlier hard work finally arrive?
  
---- ${yr+10} to ${yr+15}: Maturity Phase ---
-Write 2 paragraphs. What life looks like at age ${age+10} to ${age+15}. Career peak or transition. Children growing. Relationship depth or strain. Health beginning to need attention. Financial position by this point.
+--- ${yr+10} to ${yr+15} ---
+Write 2 paragraphs. Life at age ${age+10} to ${age+15} — what has been achieved by now, what remains to be done, what new phase begins? How do career, relationships, children, and health each look at this stage?
  
---- ${yr+15} to ${yr+20}: Later Stages ---
-Write 2 paragraphs. What the later years look like — retirement picture, grandchildren, spiritual turning, health concerns. Whether this person ages with peace and stability or with struggle. What legacy they leave.`, 4000),
+--- ${yr+15} to ${yr+20} ---
+Write 2 paragraphs. The later stage of this 20-year window — what does life look like as this person moves toward their 40s or 50s? Is this a period of harvest and stability or continued challenge? What spiritual and personal transformation happens here?`, 4000),
  
       // CALL 7 — Doshas & Remedies
-      call(`Write ONLY this section. Start directly with === header. No intro. Go through EVERY single Dosha in the YOGAS & DOSHAS list. Do not stop until every one is addressed completely.
+      call(`Write ONLY this section. Start directly with === header. No intro. Go through every Dosha in the YOGAS & DOSHAS list completely. Every paragraph at least 100 words.
  
 === DOSHAS & PARIHARAMS ===
  
---- Each Dosha: ACTIVE or NULLIFIED ---
-For every Dosha listed above: state clearly whether it is ACTIVE or NULLIFIED. If NULLIFIED — explain in 2 sentences exactly which classical rule cancels it and what that means positively for this person's life. If ACTIVE — write a full paragraph explaining what problem it creates in real life terms.
+--- Dosha Status: Active or Nullified ---
+Go through every single Dosha listed in the chart above. For each one write at least 2 sentences: state clearly whether it is ACTIVE or NULLIFIED, then explain exactly why — which classical rule applies, what it means in this person's real life. If ACTIVE, write a full paragraph on what problem it actually creates — not in abstract but in daily lived experience.
  
---- Complete Remedies for Every Active Dosha ---
-For every ACTIVE Dosha give the complete remedy in full detail: the specific temple name and location in Tamil Nadu or Kerala, the presiding deity, the exact day of the week, the exact mantra in Sanskrit with the number of times to chant it, the gemstone to wear with exact finger and metal, the colour to wear on that day, and the food or item to donate. Make each remedy so specific and complete that the person can do it this week without asking any further questions.`, 3500),
+--- Complete Remedies ---
+For every ACTIVE Dosha give the full remedy: the specific temple name and town in Tamil Nadu or Kerala, the presiding deity, the exact day of the week, the exact Sanskrit mantra with the precise number of repetitions, the gemstone with exact finger and metal, the colour to wear, and the food or item to donate. Write enough detail that this person can begin the remedy this week without any further questions.`, 4000),
  
-      // CALL 8 — Special strengths + Later ages + Death possibility + Question
-      call(`Write ONLY these sections. Start each directly with its === header. No intro.
+      // CALL 8 — Special Strengths + Later Life + Death + Question
+      call(`Write ONLY these sections. Start each directly with its === header. No intro. Every paragraph at least 100 words.
  
 === SPECIAL STRENGTHS OF THIS CHART ===
-Write 3 paragraphs. What extraordinary yogas are present and what specific gifts they give in real life. Which is the single most powerful planet in this chart and what promise it makes. What makes this chart exceptional — what level of success, recognition, or spiritual attainment is possible for this person.
+Write 3 paragraphs. What extraordinary yogas are present and what specific real-life gifts do they give this person — not in abstract but in concrete terms of career, relationships, wealth, recognition. Which is the single most powerful planet in this chart and what does it promise over this lifetime? What level of success, recognition, or spiritual attainment is genuinely possible for this person based on the chart?
  
 === LATER YEARS & LONGEVITY ===
-Write 3 paragraphs. Based on the 8th house (${chart.houses[8]?.join(',')||'Empty'}), 8th lord position, Saturn H${p.Saturn?.house} ${p.Saturn?.status}, and the overall chart strength — what does life look like after age 60? What is the health picture in old age? What does this chart indicate about longevity — is this a long life, average, or are there risk periods? Which ages or Dasha periods need the most care for health preservation? What kind of death is indicated — peaceful, sudden, after illness — and in what approximate age range does the chart suggest the life force weakens? Speak honestly but with sensitivity.${question ? `
+Write 3 paragraphs. What does life look like after age 60 for this person — health, family, finances, spiritual life? What does the 8th house (${chart.houses[8]?.join(',')||'Empty'}), 8th lord, and Saturn H${p.Saturn?.house} indicate about the length and quality of life? Which Dasha periods in old age carry risk and which bring peace? What kind of final years does this chart indicate — active and connected, or withdrawn and reflective? What approximate age range does the chart suggest for the natural weakening of the life force, and what kind of passing is indicated? Speak honestly and with care.${question ? `
  
-=== ANSWER TO YOUR QUESTION ===
-Write 3 paragraphs answering "${question}" with specific astrological reasoning, exact planetary positions causing the answer, and clear timing of when things will resolve or unfold.` : ''}`, 3000),
+=== YOUR QUESTION ANSWERED ===
+Write 3 paragraphs answering "${question}" — give the astrological reasoning clearly, name the planets and houses involved, state when exactly things will shift, and give a clear direct answer this person can act on.` : ''}`, 3500),
  
     ]);
  
