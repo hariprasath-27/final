@@ -1,3 +1,5 @@
+
+ 
 'use strict';
  
 function buildReadingPrompt(chart, person, question) {
@@ -115,6 +117,24 @@ function buildReadingPrompt(chart, person, question) {
   const bhriguStr = chart.bhriguBindu?.summary || '';
   const unfinishedStr = chart.unfinishedKarma?.summary || '';
   const probMatrixStr = chart.probabilityMatrix?.summary || '';
+ 
+  // Batch 6 precision data
+  const vargottamaStr = chart.vargottama?.length
+    ? chart.vargottama.map(v=>v.desc).join(' | ')
+    : 'No Vargottama planets';
+  const pushkaraStr = chart.pushkaraNavamsa?.length
+    ? chart.pushkaraNavamsa.map(v=>v.desc).join(' | ')
+    : 'No Pushkara Navamsa planets';
+  const dominanceStr = chart.planetDominance
+    ? `Dominant: ${chart.planetDominance.dominant?.join(' | ')} | Suppressed: ${chart.planetDominance.suppressed?.join(' | ')}`
+    : '';
+  const dashaQualityStr = chart.dashaQuality?.summary || '';
+  const birthConfStr = chart.birthTimeConfidence?.summary || '';
+  const recoveryStr = chart.recoveryIndicators?.summary || '';
+  const heatmapStr = chart.transitHeatmap
+    ? `Best month: ${chart.transitHeatmap.best} | Worst: ${chart.transitHeatmap.worst} | Scores: ${chart.transitHeatmap.summary}`
+    : '';
+  const dusthanaStr = chart.dusthanaTransformations?.summary || '';
   const transitTriggersStr = chart.transitTriggers
     ? [
         chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
@@ -279,6 +299,30 @@ MANIFESTATION RESISTANCE: ${resistanceStr}
 UNFINISHED KARMA: ${unfinishedStr}
 BHRIGU BINDU: ${bhriguStr}
 PROBABILITY MATRIX: ${probMatrixStr}
+ 
+VARGOTTAMA PLANETS (same sign D1+D9 — exceptional strength, full results):
+${vargottamaStr}
+ 
+PUSHKARA NAVAMSA (special grace positions — afflictions softened):
+${pushkaraStr}
+ 
+PLANET DOMINANCE (ranked by combined strength — these control the reading):
+${dominanceStr}
+ 
+CURRENT DASHA QUALITY:
+${dashaQualityStr}
+ 
+TRANSIT HEATMAP (next 6 months):
+${heatmapStr}
+ 
+RECOVERY INDICATORS (where healing comes from):
+${recoveryStr}
+ 
+DUSTHANA TRANSFORMATIONS (6/8/12 are not always bad):
+${dusthanaStr}
+ 
+BIRTH TIME CONFIDENCE:
+${birthConfStr}
  
 PSYCHOLOGICAL PROFILE:
 ${psychStr}
