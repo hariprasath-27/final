@@ -545,8 +545,13 @@ async function generateReading() {
     });
 
     if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.error || 'Server error ' + resp.status);
+      const text = await resp.text();
+      let msg = 'Server error ' + resp.status;
+      try { const e = JSON.parse(text); msg = e.error || msg; } catch(e2) {
+        if (text.includes('FUNCTION_INVOCATION_TIMEOUT')) msg = 'Reading timed out — please try again.';
+        else if (text.includes('An error')) msg = 'Server error — please try again in a moment.';
+      }
+      throw new Error(msg);
     }
 
     const data = await resp.json();
@@ -605,13 +610,35 @@ async function generateMatch() {
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ person1: p1, person2: p2 })
     });
-    if (!resp.ok) { const e=await resp.json(); throw new Error(e.error||'Server error'); }
+    if (!resp.ok) { const t=await resp.text(); let m='Server error '+resp.status; try{const e=JSON.parse(t);m=e.error||m;}catch(e2){if(t.includes('TIMEOUT'))m='Match reading timed out — please try again.';} throw new Error(m); }
 
     const data = await resp.json();
     if (!data.ok) throw new Error(data.error || 'Unknown error');
 
-    renderMatchScores(data.chart1, data.chart2, p1, p2, data.matchResult);
-    readingBody.innerHTML = formatReading(data.reading);
+    renderMatchScores(data.chart1, data.chart2, p1, p2, data.matchResult, data.matchScore);
+
+    // Show both traditional and deep readings with tab toggle
+    const tradHtml = formatReading(data.traditionalReading || data.reading);
+    const deepHtml = formatReading(data.deepReading || data.reading);
+
+    readingBody.innerHTML = `
+      <div style="display:flex;gap:10px;margin-bottom:18px;border-bottom:1px solid rgba(201,168,76,.2);padding-bottom:12px;">
+        <button id="tabTrad" onclick="switchMatchTab('trad')" style="flex:1;padding:10px;background:var(--gold);color:#0a0a0f;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">✦ Traditional Porutham</button>
+        <button id="tabDeep" onclick="switchMatchTab('deep')" style="flex:1;padding:10px;background:rgba(201,168,76,.1);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;">⟡ Deep Compatibility</button>
+      </div>
+      <div id="matchTrad">${tradHtml}</div>
+      <div id="matchDeep" style="display:none">${deepHtml}</div>
+    `;
+
+    window.switchMatchTab = function(tab) {
+      document.getElementById('matchTrad').style.display = tab==='trad'?'block':'none';
+      document.getElementById('matchDeep').style.display = tab==='deep'?'block':'none';
+      document.getElementById('tabTrad').style.background = tab==='trad'?'var(--gold)':'rgba(201,168,76,.1)';
+      document.getElementById('tabTrad').style.color = tab==='trad'?'#0a0a0f':'var(--gold)';
+      document.getElementById('tabDeep').style.background = tab==='deep'?'var(--gold)':'rgba(201,168,76,.1)';
+      document.getElementById('tabDeep').style.color = tab==='deep'?'#0a0a0f':'var(--gold)';
+    };
+
     readingWrap.scrollIntoView({ behavior:'smooth', block:'start' });
 
   } catch(e){
