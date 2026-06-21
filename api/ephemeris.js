@@ -1,4 +1,3 @@
-
 'use strict';
 const { julian, solar, moonposition } = require('astronomia');
  
@@ -671,6 +670,16 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const unfinishedKarma = getUnfinishedKarma(planets, karakas);
   const probabilityMatrix = getProbabilityMatrix({dasha,refinedMarriage}, weightedScores, tripleConfirmation);
  
+  // Batch 6 — Precision Layer 2
+  const vargottama = detectVargottama(planets);
+  const pushkaraNavamsa = detectPushkaraNavamsa(planets);
+  const planetDominance = getPlanetDominance(planets, lagnaIdx, allYogas, dasha);
+  const dashaQuality = getDashaQualityScore(dasha, planets, lagnaIdx, allYogas);
+  const birthTimeConfidence = getBirthTimeConfidence(lagna, planets.Moon);
+  const recoveryIndicators = getRecoveryIndicators(planets, lagnaIdx, allYogas);
+  const transitHeatmap = getTransitHeatmap(lagnaIdx, planets.Moon.rasiIdx);
+  const dusthanaTransformations = getDusthanaTransformations(planets, lagnaIdx, allYogas);
+ 
   return {
     input:{dob,tob,place,coords},
     jd:jdUT, ayanamsha:parseFloat(ayanamsha.toFixed(4)),
@@ -691,6 +700,8 @@ function buildFullChart(dob, tob, place, overrides={}) {
     weightedScores, tripleConfirmation,
     planetMaturity, functionalNature, lifeStage,
     relationshipKarma, manifestationResistance, bhriguBindu, unfinishedKarma,
+    vargottama, pushkaraNavamsa, planetDominance, dashaQuality,
+    birthTimeConfidence, recoveryIndicators, transitHeatmap, dusthanaTransformations,
     houseSignif:HOUSE_SIGNIF,
     metadata:{calculatedAt:new Date().toISOString(),method:'Lahiri Ayanamsha, Whole Sign Houses'}
   };
@@ -2690,3 +2701,348 @@ module.exports.getManifestationResistance = getManifestationResistance;
 module.exports.getProbabilityMatrix = getProbabilityMatrix;
 module.exports.getBhriguBindu = getBhriguBindu;
 module.exports.getUnfinishedKarma = getUnfinishedKarma;
+ 
+// ═══════════════════════════════════════════════════
+// ADVANCED ENGINE — BATCH 6: PRECISION LAYER 2
+// ═══════════════════════════════════════════════════
+ 
+// ── 81. Orb-weighted aspect strength ──
+function getAspectStrength(planet1Sid, planet2Sid) {
+  const diff = Math.abs(planet1Sid - planet2Sid);
+  const normDiff = Math.min(diff, 360 - diff);
+  // Check each aspect type with orb
+  const aspects = [
+    { type: 'conjunction', angle: 0,   orb: 10 },
+    { type: 'opposition',  angle: 180, orb: 10 },
+    { type: 'trine',       angle: 120, orb: 8  },
+    { type: 'square',      angle: 90,  orb: 8  },
+    { type: 'sextile',     angle: 60,  orb: 6  },
+  ];
+  for (const asp of aspects) {
+    const deviation = Math.abs(normDiff - asp.angle);
+    if (deviation <= asp.orb) {
+      const strength = deviation <= 3 ? 'FULL' : deviation <= 6 ? 'STRONG' : 'MEDIUM';
+      const score = deviation <= 3 ? 100 : deviation <= 6 ? 75 : 50;
+      return { type: asp.type, deviation: parseFloat(deviation.toFixed(2)), strength, score,
+        desc: `${asp.type} (${deviation.toFixed(1)}° orb — ${strength} power)` };
+    }
+  }
+  return null;
+}
+ 
+// ── 83. Vargottama Detection ──
+// Planet in same sign in D1 and D9 = massively strong
+function detectVargottama(planets) {
+  const vargottama = [];
+  for (const [name, p] of Object.entries(planets)) {
+    if (p.rasiIdx === p.navamsaRasiIdx) {
+      vargottama.push({
+        planet: name,
+        rasi: p.rasi,
+        desc: `${name} Vargottama in ${p.rasi} — same sign in D1 and D9 — exceptional strength, results come fully`
+      });
+    }
+  }
+  return vargottama;
+}
+ 
+// ── 84. Pushkara Navamsa ──
+// Certain navamsa positions are highly auspicious
+const PUSHKARA_NAVAMSA = {
+  Mesha: [1, 9],      // Pada 1 (Mesha navamsa) and pada 9 (Dhanu navamsa)
+  Rishabha: [4, 12],
+  Mithuna: [3, 11],
+  Kataka: [6, 8],
+  Simha: [5, 7],
+  Kanya: [2, 10],
+  Tula: [3, 9],
+  Vrischika: [4, 8],
+  Dhanu: [1, 7],
+  Makara: [6, 12],
+  Kumbha: [5, 11],
+  Meena: [2, 10],
+};
+function detectPushkaraNavamsa(planets) {
+  const pushkara = [];
+  for (const [name, p] of Object.entries(planets)) {
+    if (name === 'Rahu' || name === 'Ketu') continue;
+    const padas = PUSHKARA_NAVAMSA[p.rasi];
+    if (padas && padas.includes(p.pada)) {
+      pushkara.push({
+        planet: name, rasi: p.rasi, pada: p.pada,
+        desc: `${name} in Pushkara Navamsa (${p.rasi} Pada ${p.pada}) — special grace, results better than expected, afflictions softened`
+      });
+    }
+  }
+  return pushkara;
+}
+ 
+// ── 82. Planet Dominance Score (priority weighting) ──
+function getPlanetDominance(planets, lagnaIdx, yogas, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const vargottama = detectVargottama(planets);
+  const pushkara = detectPushkaraNavamsa(planets);
+ 
+  const dominance = [];
+  for (const [name, p] of Object.entries(planets)) {
+    if (name === 'Rahu' || name === 'Ketu') continue;
+    let score = p.bala || 50;
+ 
+    // Vargottama bonus (+20)
+    if (vargottama.some(v => v.planet === name)) score += 20;
+    // Pushkara bonus (+10)
+    if (pushkara.some(v => v.planet === name)) score += 10;
+    // Yoga involvement
+    yogas.forEach(y => {
+      if (y.planet === name && y.type === 'good' && !y.nullified) score += 12;
+      if (y.planet === name && y.type === 'bad' && !y.nullified) score -= 12;
+    });
+    // Current dasha relevance
+    if (dasha.current?.lord === name) score += 15;
+    if (dasha.currentAntar?.lord === name) score += 10;
+    // Avastha
+    if (p.avastha?.includes('Yuva')) score += 8;
+    if (p.avastha?.includes('Mrita')) score -= 15;
+    if (p.avastha?.includes('Bala')) score -= 5;
+    // Retrograde adds internalized strength
+    if (p.retrograde) score += 5;
+    // Combust removes much of the power
+    if (p.combust) score -= 20;
+ 
+    dominance.push({ name, score: Math.max(0, Math.min(150, Math.round(score))),
+      house: p.house, status: p.status, bala: p.bala,
+      isVargottama: vargottama.some(v=>v.planet===name),
+      isPushkara: pushkara.some(v=>v.planet===name),
+      isDashaLord: dasha.current?.lord===name,
+      isAntarLord: dasha.currentAntar?.lord===name,
+    });
+  }
+  dominance.sort((a,b) => b.score - a.score);
+  return {
+    ranked: dominance,
+    dominant: dominance.slice(0,3).map(p=>`${p.name}(${p.score}pts,H${p.house},${p.status.split(' ')[0]}${p.isVargottama?',VARG':''}${p.isDashaLord?',DASHA':''})`),
+    suppressed: dominance.slice(-3).map(p=>`${p.name}(${p.score}pts,H${p.house}${p.combust?',COMBUST':''})`),
+    summary: `Dominant: ${dominance.slice(0,3).map(p=>p.name).join('>')} | Suppressed: ${dominance.slice(-3).map(p=>p.name).join(',')}`
+  };
+}
+ 
+// ── 89. Dasha Quality Score ──
+function getDashaQualityScore(dasha, planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const current = dasha.current;
+  const antar   = dasha.currentAntar;
+  if (!current) return null;
+ 
+  const lord = current.lord;
+  const antarLord = antar?.lord;
+  const lordH = H(lord);
+  const lordStatus = planets[lord]?.status || '';
+ 
+  let opportunity = 50, stress = 50, growth = 50, loss = 50, relationship = 50;
+ 
+  // Opportunity: Dasha lord in good house / strong
+  if ([1,4,7,9,10,11].includes(lordH)) opportunity += 20;
+  if ([6,8,12].includes(lordH)) opportunity -= 20;
+  if (lordStatus.includes('Exalted') || lordStatus.includes('Own')) opportunity += 15;
+  if (lordStatus.includes('Debilitated')) opportunity -= 15;
+  opportunity = Math.max(0, Math.min(100, opportunity));
+ 
+  // Stress: malefic dashas, dusthana lords
+  if (['Saturn','Mars','Rahu','Ketu'].includes(lord) && [6,8,12].includes(lordH)) stress += 20;
+  if (['Saturn','Mars'].includes(lord) && lordStatus.includes('Enemy')) stress += 15;
+  if ([1,4,7,10].includes(lordH) && (lordStatus.includes('Exalted')||lordStatus.includes('Own'))) stress -= 15;
+  stress = Math.max(0, Math.min(100, stress));
+ 
+  // Growth: benefic dashas
+  if (['Jupiter','Venus','Moon','Mercury'].includes(lord) && [1,4,5,7,9,10,11].includes(lordH)) growth += 20;
+  if (yogas.some(y=>y.planet===lord&&y.type==='good')) growth += 15;
+  growth = Math.max(0, Math.min(100, growth));
+ 
+  // Loss: dusthana placement, malefics
+  if ([6,8,12].includes(lordH)) loss += 15;
+  if (planets[lord]?.combust) loss += 10;
+  if (planets[lord]?.retrograde) loss -= 5; // retrograde can delay loss
+  loss = Math.max(0, Math.min(100, loss));
+ 
+  // Relationship: Venus/Moon/7th house involvement
+  if (['Venus','Moon'].includes(lord) || lordH===7 || lordH===2 || lordH===11) relationship += 20;
+  if (['Saturn','Mars'].includes(lord) && [7,8,12].includes(lordH)) relationship -= 15;
+  relationship = Math.max(0, Math.min(100, relationship));
+ 
+  const overall = Math.round((opportunity + growth + (100-stress) + (100-loss) + relationship) / 5);
+ 
+  return {
+    opportunity: Math.round(opportunity),
+    stress: Math.round(stress),
+    growth: Math.round(growth),
+    loss: Math.round(loss),
+    relationship: Math.round(relationship),
+    overall,
+    quality: overall >= 70 ? 'FAVORABLE' : overall >= 50 ? 'MIXED' : 'CHALLENGING',
+    summary: `${lord} Mahadasha quality: ${overall}/100 (${overall>=70?'FAVORABLE':overall>=50?'MIXED':'CHALLENGING'}) | Opportunity:${Math.round(opportunity)}% Growth:${Math.round(growth)}% Stress:${Math.round(stress)}% Relationship:${Math.round(relationship)}%`
+  };
+}
+ 
+// ── 92. Birth Time Confidence Score ──
+function getBirthTimeConfidence(lagna, moonData) {
+  const lagnaDegs = lagna.degInRasi;
+  const moonDegs = moonData?.degInRasi || 15;
+  const risks = [];
+ 
+  // Lagna near sign boundary (within 2°)
+  if (lagnaDegs < 2 || lagnaDegs > 28) {
+    risks.push(`Lagna at ${lagnaDegs.toFixed(1)}° — near sign boundary. 15-minute birth time error could change Lagna sign.`);
+  }
+  // Moon near nakshatra boundary (affects Dasha calculation)
+  const nakDeg = moonData?.sid % (360/27);
+  const nakSize = 360/27; // 13.33°
+  if (nakDeg < 0.5 || nakDeg > (nakSize - 0.5)) {
+    risks.push(`Moon near Nakshatra boundary — Dasha starting period may be off if birth time inaccurate.`);
+  }
+ 
+  const level = risks.length >= 2 ? 'HIGH' : risks.length === 1 ? 'MODERATE' : 'LOW';
+  return {
+    level, risks,
+    lagnaAtDeg: lagnaDegs.toFixed(1),
+    summary: risks.length
+      ? `Birth time accuracy: ${level} RISK — ${risks.join(' | ')}`
+      : `Birth time confidence: GOOD — Lagna at ${lagnaDegs.toFixed(1)}° and Moon well within Nakshatra boundaries`
+  };
+}
+ 
+// ── 95. Recovery Engine ──
+function getRecoveryIndicators(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const recovery = [];
+ 
+  // Jupiter as healer
+  const jupH = H('Jupiter');
+  const jupSt = planets.Jupiter?.status || '';
+  if ([1,4,5,7,9,10].includes(jupH)) recovery.push(`Jupiter in H${jupH} (${jupSt.split(' ')[0]}) — protection, expansion, optimism; recovers from setbacks faster`);
+  if (jupSt.includes('Exalted')) recovery.push('Jupiter exalted — exceptional grace and recovery power throughout life');
+ 
+  // Moon in good position
+  const moonH = H('Moon');
+  if (planets.Moon?.status.includes('Exalted') || planets.Moon?.status.includes('Own'))
+    recovery.push(`Moon in ${planets.Moon?.rasi} (${planets.Moon?.status.split(' ')[0]}) — emotional resilience, strong support from family/mother`);
+  if ([1,4,5].includes(moonH)) recovery.push(`Moon in H${moonH} — emotional stability, ability to heal and move forward`);
+ 
+  // 9th house strength (dharma/luck)
+  const l9 = RASI_LORD[(lagnaIdx+8)%12];
+  const l9St = planets[l9]?.status || '';
+  if (l9St.includes('Exalted')||l9St.includes('Own')) recovery.push(`9th lord ${l9} strong — divine grace, luck returns after difficult periods`);
+ 
+  // Vipareeta Raja Yoga = rises from destruction
+  if (yogas.some(y=>y.name.includes('Vipareeta')))
+    recovery.push('Vipareeta Raja Yoga present — this chart is built to rise after collapse. Difficulties actually strengthen this person.');
+ 
+  // 12th house benefic = spiritual recovery
+  const h12Benefics = Object.entries(planets).filter(([n,p])=>p.house===12 && ['Jupiter','Venus','Moon'].includes(n));
+  if (h12Benefics.length > 0) recovery.push(`${h12Benefics.map(([n])=>n).join(',')} in H12 — hidden spiritual support, recovers through retreat and introspection`);
+ 
+  return {
+    indicators: recovery,
+    strength: recovery.length >= 3 ? 'STRONG' : recovery.length >= 2 ? 'MODERATE' : 'LIMITED',
+    summary: recovery.length
+      ? `Recovery strength: ${recovery.length >= 3 ? 'STRONG' : 'MODERATE'} | ${recovery.join(' | ')}`
+      : 'Limited recovery indicators — requires active remedies and effort to bounce back'
+  };
+}
+ 
+// ── 90. Transit Heatmap (next 6 months scored) ──
+function getTransitHeatmap(lagnaIdx, moonRasiIdx) {
+  const now = new Date();
+  const jdNow = 2451545.0 + (now - new Date('2000-01-01T12:00:00Z')) / (1000*86400);
+  const ayan = getLahiriAyanamsha(jdNow);
+  const T = (jdNow - 2451545.0) / 36525;
+ 
+  const months = [];
+  for (let m = 0; m < 6; m++) {
+    const futureT = T + (m * 30.44 / 365.25);
+    const futureJd = jdNow + m * 30.44;
+ 
+    const Mjup = norm360(20.9 + 3034.906 * futureT);
+    const jupTrop = norm360(34.3515 + 3034.9057*futureT + 5.5549*Math.sin(toRad(Mjup)) - 14.3312);
+    const jupH = ((Math.floor(sid(jupTrop,ayan)/30) - lagnaIdx + 12)%12)+1;
+    const jupFromMoon = ((Math.floor(sid(jupTrop,ayan)/30) - moonRasiIdx + 12)%12)+1;
+ 
+    const Msat = norm360(317.0207 + 1222.1138*futureT);
+    const satTrop = norm360(50.0775 + 1222.1138*futureT + 6.3585*Math.sin(toRad(Msat)) - 92.8553);
+    const satH = ((Math.floor(sid(satTrop,ayan)/30) - lagnaIdx + 12)%12)+1;
+    const satFromMoon = ((Math.floor(sid(satTrop,ayan)/30) - moonRasiIdx + 12)%12)+1;
+ 
+    // Score this month
+    let score = 50;
+    if ([1,2,4,5,7,9,10,11].includes(jupFromMoon)) score += 15;
+    if ([3,6,11].includes(satFromMoon)) score += 10;
+    if ([6,8,12].includes(jupH)) score -= 10;
+    if ([4,8].includes(satFromMoon)) score -= 15;
+    if ([1,2].includes(satFromMoon)) score -= 10; // Sade Sati
+    score = Math.max(0, Math.min(100, Math.round(score)));
+ 
+    const d = new Date(now);
+    d.setMonth(d.getMonth() + m);
+    const monthName = d.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
+    months.push({ month: monthName, score,
+      quality: score >= 70 ? 'FAVORABLE' : score >= 50 ? 'MIXED' : 'CHALLENGING',
+      jupH, satH, jupFromMoon, satFromMoon
+    });
+  }
+ 
+  const best = months.reduce((a,b) => a.score > b.score ? a : b);
+  const worst = months.reduce((a,b) => a.score < b.score ? a : b);
+  return {
+    months,
+    best: `${best.month} (${best.score}/100)`,
+    worst: `${worst.month} (${worst.score}/100)`,
+    summary: months.map(m=>`${m.month}:${m.score}(${m.quality.slice(0,3)})`).join(' | ')
+  };
+}
+ 
+// ── Dusthana Transformation Logic ──
+function getDusthanaTransformations(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const transformations = [];
+ 
+  // 6th lord in 6/8/12 = Vipareeta Raja (Harsha) — already detected in yogas
+  // 8th lord in 6/8/12 = Vipareeta Raja (Sarala)
+  // 12th lord in 6/8/12 = Vipareeta Raja (Vimala)
+  // These are already in yoga engine — just surface the transformation logic
+ 
+  // Benefic in dusthana = hidden growth
+  for (const [name, p] of Object.entries(planets)) {
+    if (![6,8,12].includes(p.house)) continue;
+    if (['Jupiter','Venus','Moon'].includes(name)) {
+      transformations.push({
+        planet: name, house: p.house,
+        type: 'hidden_growth',
+        desc: `${name} (benefic) in H${p.house} — hidden growth, gains come through unusual channels, spiritual depth, healing`
+      });
+    }
+    if (['Saturn','Mars','Rahu'].includes(name) && !ST(name).includes('Debilitated')) {
+      transformations.push({
+        planet: name, house: p.house,
+        type: 'struggle_resilience',
+        desc: `${name} (malefic) in H${p.house} — struggle present but builds resilience, eventual strength through repeated challenge`
+      });
+    }
+  }
+ 
+  return {
+    transformations,
+    summary: transformations.length
+      ? transformations.map(t=>t.desc).join(' | ')
+      : 'No major dusthana transformations'
+  };
+}
+ 
+module.exports.getAspectStrength = getAspectStrength;
+module.exports.detectVargottama = detectVargottama;
+module.exports.detectPushkaraNavamsa = detectPushkaraNavamsa;
+module.exports.getPlanetDominance = getPlanetDominance;
+module.exports.getDashaQualityScore = getDashaQualityScore;
+module.exports.getBirthTimeConfidence = getBirthTimeConfidence;
+module.exports.getRecoveryIndicators = getRecoveryIndicators;
+module.exports.getTransitHeatmap = getTransitHeatmap;
+module.exports.getDusthanaTransformations = getDusthanaTransformations;
