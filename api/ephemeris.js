@@ -660,6 +660,17 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const verifiedShockFacts = getVerifiedShockFacts({}, planets, lagnaIdx, allYogas);
   const marriageScores = getMarriageScores(planets, lagnaIdx, allYogas, venusAffliction, divorceIndicators, navamsaMarriage);
  
+  // Batch 5 — Precision layer
+  const age = Math.floor((Date.now()-new Date(dob))/(365.25*24*3600*1000));
+  const planetMaturity = getPlanetMaturityStatus(planets, dob);
+  const functionalNature = getFunctionalNature(lagnaIdx);
+  const lifeStage = getLifeStageContext(age);
+  const relationshipKarma = getRelationshipKarmaScore(planets, lagnaIdx, karakas, upapadaLagna, navamsa);
+  const manifestationResistance = getManifestationResistance(planets, lagnaIdx, allYogas);
+  const bhriguBindu = getBhriguBindu(planets);
+  const unfinishedKarma = getUnfinishedKarma(planets, karakas);
+  const probabilityMatrix = getProbabilityMatrix({dasha,refinedMarriage}, weightedScores, tripleConfirmation);
+ 
   return {
     input:{dob,tob,place,coords},
     jd:jdUT, ayanamsha:parseFloat(ayanamsha.toFixed(4)),
@@ -678,6 +689,8 @@ function buildFullChart(dob, tob, place, overrides={}) {
     argala7, argala10, argala1,
     planetRanking, contradictions, verifiedShockFacts, marriageScores,
     weightedScores, tripleConfirmation,
+    planetMaturity, functionalNature, lifeStage,
+    relationshipKarma, manifestationResistance, bhriguBindu, unfinishedKarma,
     houseSignif:HOUSE_SIGNIF,
     metadata:{calculatedAt:new Date().toISOString(),method:'Lahiri Ayanamsha, Whole Sign Houses'}
   };
@@ -2374,3 +2387,306 @@ function computeMatchScore(chart1, chart2, matchResult) {
 }
  
 module.exports.computeMatchScore = computeMatchScore;
+ 
+// ═══════════════════════════════════════════════════
+// ADVANCED ENGINE — BATCH 5: PRECISION LAYER
+// ═══════════════════════════════════════════════════
+ 
+// ── 46. Planet Maturity Ages ──
+const PLANET_MATURITY = { Sun:22, Moon:24, Mars:28, Mercury:32, Jupiter:16, Venus:25, Saturn:36, Rahu:42, Ketu:48 };
+ 
+function getPlanetMaturityStatus(planets, dob) {
+  const ageNow = Math.floor((Date.now() - new Date(dob)) / (365.25*24*3600*1000));
+  const status = {};
+  for (const [name, age] of Object.entries(PLANET_MATURITY)) {
+    const matured = ageNow >= age;
+    status[name] = {
+      maturityAge: age,
+      matured,
+      yearsToMaturity: matured ? 0 : age - ageNow,
+      interpretation: matured
+        ? `${name} matured at ${age} — now gives full stable results`
+        : `${name} matures at ${age} (in ${age-ageNow} years) — currently unstable/learning phase`
+    };
+  }
+  return {
+    status,
+    summary: Object.entries(status)
+      .filter(([,s]) => !s.matured)
+      .map(([n,s]) => `${n} matures at ${s.maturityAge} (${s.yearsToMaturity} years)`)
+      .join(' | ') || 'All major planets matured',
+    matureNow: Object.entries(status).filter(([,s])=>s.matured).map(([n])=>n),
+    immatureNow: Object.entries(status).filter(([,s])=>!s.matured).map(([n])=>n),
+  };
+}
+ 
+// ── 30. Functional Benefic/Malefic Engine ──
+// Based on Lagna — each planet has a functional role
+function getFunctionalNature(lagnaIdx) {
+  // Yogakaraka = lord of both Kendra and Trikona
+  const KENDRA_LORDS  = [1,4,7,10].map(h => RASI_LORD[(lagnaIdx+h-1)%12]);
+  const TRIKONA_LORDS = [1,5,9].map(h  => RASI_LORD[(lagnaIdx+h-1)%12]);
+  const DUSTHANA_LORDS= [6,8,12].map(h => RASI_LORD[(lagnaIdx+h-1)%12]);
+  const MARAKA_LORDS  = [2,7].map(h    => RASI_LORD[(lagnaIdx+h-1)%12]);
+ 
+  const nature = {};
+  for (const planet of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn']) {
+    const isKendra  = KENDRA_LORDS.includes(planet);
+    const isTrikona = TRIKONA_LORDS.includes(planet);
+    const isDusthana= DUSTHANA_LORDS.includes(planet);
+    const isMaraka  = MARAKA_LORDS.includes(planet);
+    const isYogakaraka = isKendra && isTrikona;
+ 
+    let role = 'neutral';
+    if (isYogakaraka) role = 'yogakaraka (most benefic)';
+    else if (isTrikona && !isDusthana) role = 'functional benefic (trikona lord)';
+    else if (isKendra && !isDusthana) role = 'functional benefic (kendra lord)';
+    else if (isDusthana && !isKendra && !isTrikona) role = 'functional malefic (dusthana lord)';
+    else if (isMaraka) role = 'maraka (2nd/7th lord)';
+ 
+    nature[planet] = { isKendra, isTrikona, isDusthana, isMaraka, isYogakaraka, role };
+  }
+  return nature;
+}
+ 
+// ── 40. Age Filter / Life Stage Realism ──
+function getLifeStageContext(age) {
+  if (age < 18) return {
+    stage: 'Teen',
+    validPredictions: ['education','personality','family'],
+    invalidPredictions: ['marriage','career peak','children','wealth'],
+    note: 'No marriage, career peak, or children predictions appropriate at this age.'
+  };
+  if (age < 24) return {
+    stage: 'Early Adult',
+    validPredictions: ['education','early career','personality','family dynamics'],
+    invalidPredictions: ['children before 24 unless early marriage shown','career peak'],
+    note: 'No children timing predictions unless very early marriage is strongly indicated.'
+  };
+  if (age < 35) return {
+    stage: 'Young Adult',
+    validPredictions: ['career','marriage','children','wealth building','property'],
+    invalidPredictions: [],
+    note: 'Saturn matures at 36 — career authority builds toward that age.'
+  };
+  if (age < 45) return {
+    stage: 'Maturity',
+    validPredictions: ['career peak','family maturity','wealth accumulation','health monitoring','property'],
+    invalidPredictions: [],
+    note: 'Rahu karmic peak period. Major life decisions crystallize.'
+  };
+  if (age < 55) return {
+    stage: 'Mid-Life',
+    validPredictions: ['career authority','legacy building','health','grandchildren','spiritual turning'],
+    invalidPredictions: ['new career starts','first marriage'],
+    note: 'Ketu wisdom phase begins at 48. Spiritual dimension strengthens.'
+  };
+  return {
+    stage: 'Senior',
+    validPredictions: ['health','spiritual life','grandchildren','legacy','longevity'],
+    invalidPredictions: ['career peaks','first marriage','new children'],
+    note: 'Focus on longevity, wisdom, and family legacy.'
+  };
+}
+ 
+// ── 44. Severity Control / Affliction Scoring ──
+function getAfflictionSeverity(score) {
+  if (score <= 30) return { level: 'mild', desc: 'mild tendency, easily managed' };
+  if (score <= 60) return { level: 'moderate', desc: 'moderate — noticeable but manageable with awareness' };
+  if (score <= 80) return { level: 'strong', desc: 'strong — likely to manifest, needs conscious effort' };
+  return { level: 'severe', desc: 'severe — significant life impact, remedies strongly advised' };
+}
+ 
+// ── 46/47. Nakshatra Pada Psychology (deeper) ──
+const PADA_NAVAMSA = [
+  'Mesha','Rishabha','Mithuna','Kataka',  // Padas 1-4 of Nak 1
+];
+function getNakshatraPadaDetails(nakIdx, pada) {
+  // Navamsa sign of a nakshatra pada
+  const startNavamsa = (nakIdx * 4) % 12;
+  const padaNavamsaIdx = (startNavamsa + pada - 1) % 12;
+  const VARNA = { Mesha:'Kshatriya',Rishabha:'Vaishya',Mithuna:'Shudra',Kataka:'Brahmin',
+    Simha:'Kshatriya',Kanya:'Vaishya',Tula:'Shudra',Vrischika:'Brahmin',
+    Dhanu:'Kshatriya',Makara:'Vaishya',Kumbha:'Shudra',Meena:'Brahmin' };
+  const navamsaSign = RASI_NAMES[padaNavamsaIdx];
+  return {
+    pada, navamsaSign,
+    navamsaLord: RASI_LORD[padaNavamsaIdx],
+    varna: VARNA[navamsaSign] || 'mixed',
+    element: RASI_ELEMENT?.[navamsaSign] || 'mixed',
+  };
+}
+ 
+// ── 54. Event Trigger Score ──
+function getEventTriggerScore(dashaActive, transitActive, navamsaSupport, ashtakavargaScore) {
+  // Dasha=40%, Transit=30%, Navamsa=15%, Ashtakavarga=15%
+  const score = (dashaActive?40:0) + (transitActive?30:0) + (navamsaSupport?15:0) + (ashtakavargaScore>=4?15:ashtakavargaScore>=3?10:0);
+  return {
+    score,
+    likely: score >= 70,
+    possible: score >= 40,
+    confidence: score>=70?'HIGH':score>=55?'MEDIUM':'LOW',
+    breakdown: `Dasha:${dashaActive?40:0} Transit:${transitActive?30:0} Navamsa:${navamsaSupport?15:0} Ashtakavarga:${ashtakavargaScore>=4?15:ashtakavargaScore>=3?10:0}`
+  };
+}
+ 
+// ── 56. Relationship Karma Score ──
+function getRelationshipKarmaScore(planets, lagnaIdx, karakas, upapadaLagna, navamsa) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  let score = 50;
+  const factors = [];
+ 
+  const dk = karakas?.Darakaraka;
+  const ul = upapadaLagna;
+  const l7 = RASI_LORD[(lagnaIdx+6)%12];
+ 
+  // DK strength
+  if (dk && ST(dk).includes('Exalted')) { score+=15; factors.push(`DK ${dk} exalted`); }
+  if (dk && ST(dk).includes('Debilitated')) { score-=15; factors.push(`DK ${dk} debilitated`); }
+  // UL quality
+  if (ul && ul.rasiIdx !== undefined) {
+    const ulLord = RASI_LORD[ul.rasiIdx];
+    if (ST(ulLord).includes('Exalted')||ST(ulLord).includes('Own')) { score+=10; factors.push(`UL lord ${ulLord} strong`); }
+    if ([6,8,12].includes(planets[ulLord]?.house)) { score-=10; factors.push(`UL lord in dusthana`); }
+  }
+  // A7 strong
+  const a7Lord = RASI_LORD[(lagnaIdx+6)%12];
+  if (ST(a7Lord).includes('Exalted')) { score+=8; factors.push('A7 lord strong'); }
+  // Venus quality
+  const venSt = ST('Venus');
+  if (venSt.includes('Exalted')||venSt.includes('Own')) { score+=12; factors.push('Venus dignified'); }
+  if (venSt.includes('Debilitated')) { score-=12; factors.push('Venus debilitated'); }
+  if (planets.Venus?.combust) { score-=10; factors.push('Venus combust'); }
+  // D9 7th
+  const d9v = navamsa?.planets?.Venus;
+  if (d9v?.status.includes('Exalted')||d9v?.status.includes('Own')) { score+=10; factors.push('D9 Venus strong'); }
+  if (d9v?.status.includes('Debilitated')) { score-=10; factors.push('D9 Venus weak'); }
+  // Rahu-Venus — obsessive element
+  const rahuVenus = Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0)) < 10;
+  if (rahuVenus) { factors.push('Rahu-Venus: obsessive love element present'); }
+ 
+  score = Math.max(0, Math.min(100, score));
+  const level = score>=75?'Strong karmic bond — relationship feels destined':
+    score>=55?'Moderate karmic bond — relationship takes effort to deepen':
+    score>=35?'Weak karmic bond — relationship may feel karmic debt rather than gift':
+    'Heavy karmic relationship — significant past-life patterns to resolve';
+ 
+  return { score, level, factors,
+    summary: `Relationship Karma: ${score}/100 — ${level} | Factors: ${factors.join(', ')}` };
+}
+ 
+// ── 65. Manifestation Resistance Score ──
+function getManifestationResistance(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  let score = 0;
+  const factors = [];
+ 
+  // Saturn strong aspects
+  if (planets.Saturn?.bala >= 70) { score+=15; factors.push('Saturn dominant — delays gratification'); }
+  // Retrograde planets
+  const retrogrades = Object.entries(planets).filter(([n,p])=>p.retrograde&&!['Rahu','Ketu','Sun','Moon'].includes(n));
+  if (retrogrades.length >= 2) { score+=10; factors.push(`${retrogrades.length} retrograde planets — internalized energy`); }
+  // H12 dominant
+  const h12Count = Object.values(planets).filter(p=>p.house===12).length;
+  if (h12Count >= 2) { score+=10; factors.push(`${h12Count} planets in H12 — withdrawal tendency`); }
+  // Ketu in success houses
+  if ([1,5,9,10].includes(H('Ketu'))) { score+=10; factors.push(`Ketu in H${H('Ketu')} — spiritual detachment from material success`); }
+  // Multiple malefics in dusthana
+  const dusthanaMalefics = ['Saturn','Mars','Rahu','Ketu'].filter(n=>[6,8,12].includes(H(n)));
+  if (dusthanaMalefics.length >= 2) { score+=10; factors.push(`Malefics in dusthana: ${dusthanaMalefics.join(',')}`); }
+  // Neecha planets without Bhanga
+  const neechaActive = yogas.filter(y=>y.name.includes('ACTIVE')&&y.name.includes('Neecham'));
+  if (neechaActive.length >= 1) { score+=15; factors.push(`${neechaActive.length} active debilitation(s) — results blocked`); }
+ 
+  score = Math.min(100, score);
+  const level = score>=70?'HIGH resistance — good yogas may manifest late or partially':
+    score>=40?'MODERATE resistance — some delay expected, consistent effort needed':
+    'LOW resistance — chart manifests relatively smoothly';
+ 
+  return { score, level, factors,
+    summary: `Manifestation Resistance: ${score}/100 (${level}) | ${factors.join(' | ')}` };
+}
+ 
+// ── 74. Probability Matrix for Major Events ──
+function getProbabilityMatrix(chart, weightedScores, tripleConfirmation) {
+  const ms = weightedScores?.marriage;
+  const cs = weightedScores?.career;
+  const ws = weightedScores?.wealth;
+  const d  = chart.dasha;
+  const mw = chart.refinedMarriage?.windows || [];
+ 
+  const marriageProb = ms?.blended >= 70 ? 'HIGH (80-100%)' : ms?.blended >= 55 ? 'LIKELY (60-79%)' : ms?.blended >= 40 ? 'POSSIBLE (40-59%)' : 'LOWER (20-39%)';
+  const careerProb   = cs?.normalized >= 65 ? 'HIGH' : cs?.normalized >= 50 ? 'LIKELY' : 'MODERATE';
+  const wealthProb   = ws?.normalized >= 65 ? 'HIGH' : ws?.normalized >= 50 ? 'LIKELY' : 'MODERATE';
+ 
+  return {
+    marriage: {
+      bestCase: mw[0] ? `Engagement/meeting in ${mw[0].period} (${mw[0].dates})` : 'Next favorable Dasha',
+      mostLikely: mw[1] ? `Marriage in ${mw[1].period} (${mw[1].dates})` : mw[0] ? `Marriage in ${mw[0].period}` : 'Requires Dasha alignment',
+      worstCase: `Delayed — possible until age 35+ if current patterns persist`,
+      probability: marriageProb
+    },
+    career: {
+      bestCase: `Breakthrough in current ${d.current?.lord} Dasha`,
+      mostLikely: `Career advancement in next 3-5 years`,
+      probability: careerProb
+    },
+    wealth: {
+      bestCase: `Significant gains in next wealth window`,
+      mostLikely: `Steady accumulation, peak in Saturn/Jupiter periods`,
+      probability: wealthProb
+    },
+    summary: `Marriage: ${marriageProb} | Career: ${careerProb} | Wealth: ${wealthProb}`
+  };
+}
+ 
+// ── Bhrigu Bindu (Moon-Rahu midpoint) ──
+function getBhriguBindu(planets) {
+  const moonSid = planets.Moon?.sid || 0;
+  const rahuSid = planets.Rahu?.sid || 0;
+  let midpoint = (moonSid + rahuSid) / 2;
+  // If they are more than 180° apart, add 180 to the midpoint
+  if (Math.abs(moonSid - rahuSid) > 180) midpoint = norm360(midpoint + 180);
+  const bbRasiIdx = Math.floor(midpoint / 30);
+  const bbHouse = ((bbRasiIdx - (planets.Sun?.rasiIdx||0) + 12) % 12) + 1;
+  return {
+    longitude: midpoint.toFixed(2),
+    rasi: RASI_NAMES[bbRasiIdx],
+    rasiIdx: bbRasiIdx,
+    summary: `Bhrigu Bindu at ${midpoint.toFixed(1)}° (${RASI_NAMES[bbRasiIdx]}) — transiting planets over this point trigger major life events`
+  };
+}
+ 
+// ── Unfinished Karma Detector ──
+function getUnfinishedKarma(planets, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const flags = [];
+  const dk = karakas?.Darakaraka;
+  const ak = karakas?.Atmakaraka;
+ 
+  if (dk && planets[dk]?.retrograde) flags.push(`Darakaraka ${dk} retrograde — unfinished lover/spouse karma from past life`);
+  if (ak && planets[ak]?.retrograde) flags.push(`Atmakaraka ${ak} retrograde — soul still working on its core lesson`);
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10) flags.push('Rahu-Venus: obsessive unfulfilled desire pattern from past life');
+  if (H('Ketu')===5) flags.push('Ketu in H5: unfinished creative/romantic karma — may repeat patterns from past life');
+  if (H('Saturn')===7) flags.push('Saturn in H7: serious karmic debt in partnerships — must be worked through with patience');
+  if (H('Ketu')===7) flags.push('Ketu in H7: past life spouse/partner karma — relationships feel familiar but incomplete');
+ 
+  return {
+    flags,
+    count: flags.length,
+    summary: flags.length ? `Unfinished karma detected (${flags.length}): ${flags.join(' | ')}` : 'No major unfinished karma signatures'
+  };
+}
+ 
+module.exports.getPlanetMaturityStatus = getPlanetMaturityStatus;
+module.exports.getFunctionalNature = getFunctionalNature;
+module.exports.getLifeStageContext = getLifeStageContext;
+module.exports.getAfflictionSeverity = getAfflictionSeverity;
+module.exports.getNakshatraPadaDetails = getNakshatraPadaDetails;
+module.exports.getEventTriggerScore = getEventTriggerScore;
+module.exports.getRelationshipKarmaScore = getRelationshipKarmaScore;
+module.exports.getManifestationResistance = getManifestationResistance;
+module.exports.getProbabilityMatrix = getProbabilityMatrix;
+module.exports.getBhriguBindu = getBhriguBindu;
+module.exports.getUnfinishedKarma = getUnfinishedKarma;
