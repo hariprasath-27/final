@@ -1,4 +1,5 @@
 
+ 
 'use strict';
 const Anthropic = require('@anthropic-ai/sdk');
 const { buildFullChart } = require('./ephemeris');
@@ -63,14 +64,14 @@ DASA SANDHI: ${matchResult.dasaSandhi?.warnings?.length?matchResult.dasaSandhi.w
 EXCEPTIONS TRIGGERED (Nivarathi): ${matchResult.exceptionsTriggered?.length?matchResult.exceptionsTriggered.join('; '):'None'}
 EKA RASI UTTHAMAM: ${matchResult.ekaRasiApplied?'YES — all sequential same-Rasi doshas cancelled':'No'}`;
  
-    const sys = `You are Jothida Pandithar, master Tamil Jyotish astrologer 40 years experience. Give a deep, accurate marriage compatibility reading. Cite exact porutham scores in every statement. Use === SECTION === headers. No bullet points — flowing paragraphs. State every Dosha as ACTIVE or NULLIFIED with exact reason. Be warm but honest — parents are reading this.`;
+    const sys = `You are Jothida Pandithar, master Tamil Jyotish astrologer 40 years experience. Give a deep, accurate marriage compatibility reading. Cite exact porutham scores in every statement. Use === SECTION === headers. No bullet points — flowing paragraphs. State every Dosha as ACTIVE or NULLIFIED with exact reason. Be warm but honest — parents are reading this. CRITICAL: Always complete every sentence fully. If approaching the token limit, finish the current sentence and wrap up the paragraph cleanly. Never stop mid-sentence or mid-word.`;
  
     // Two parallel calls — together under 30s, well within Vercel 60s limit
     const [r1, r2] = await Promise.all([
  
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 6000,
+        max_tokens: 4000,
         system: sys,
         messages: [{ role: 'user', content: `${ctx}
  
@@ -94,7 +95,7 @@ Write Part 1 with these sections. Flowing paragraphs, no bullets, cite scores al
  
       anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2000,
+        max_tokens: 4000,
         system: sys,
         messages: [{ role: 'user', content: `${ctx}
  
