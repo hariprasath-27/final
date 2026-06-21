@@ -1,4 +1,3 @@
-
  
 'use strict';
  
@@ -372,15 +371,38 @@ ${question ? `\nSPECIFIC QUESTION: ${question}` : ''}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 READING INSTRUCTIONS — FOLLOW EXACTLY:
  
-GUARDRAIL RULES — ENFORCE THESE FOR EVERY STATEMENT:
-1. MINIMUM CONFIRMATIONS: Psychological traits need 3+. Marriage type needs 2+. Divorce needs 3+. Family opposition needs 3+. Second marriage needs 3+. If below threshold, mark LOW confidence.
-2. EMPTY HOUSES: Never conclude absence from empty house. Always check house lord. Empty H7 ≠ no marriage. Empty H5 ≠ no children.
-3. NO INFERENCE JUMPS: H12 ≠ parental control. Sun H4 ≠ father decides marriage. Moon H12 alone ≠ cold mother. Venus affliction alone ≠ family rejection.
-4. CONTRADICTION: If two indicators conflict, state both. "X suggests delay, but Y suggests eventual success." Never pick one side.
-5. CONFIDENCE: Label every major prediction HIGH (3+ confirm) / MEDIUM (2 confirm) / LOW (1 confirm).
-6. FORBIDDEN: Never predict death, terminal disease, exact tragedy. Never state trauma as fact without 3+ indicators.
-7. TIMING: Give primary + secondary + backup windows. Never binary ("marry by 28 or never").
-8. CAREER: Give 3-5 possible fields. Never force one profession.
+GUARDRAIL RULES — ENFORCE EVERY ONE:
+ 
+SUPPRESSION LIST (never infer these automatically):
+× Moon H12 alone → emotional neglect (needs Moon+Saturn/Ketu+H4 = 3+ indicators)
+× Rahu H7 alone → foreign spouse (needs H12+9th lord+UL+D9 = 4+ indicators)
+× Ketu H5 alone → childlessness or self-sabotage (needs H5 lord+Jupiter+D7 = 3+)
+× H12 placement → surrender to parents or parental control (never)
+× Sun H4 alone → father decides marriage (needs H9+Sun+Saturn = 2+)
+× Venus affliction alone → family rejection (needs H4+H9+UL = 3+)
+× Single malefic in dusthana → definite failure (always check Vipareeta/cancellation)
+ 
+PREDICTION FORMULA: Prediction Strength = Natal Promise × Dasha Activation × Transit Trigger × Cancellation Check × Divisional Support. Missing any layer = downgrade to LOW or MEDIUM confidence.
+ 
+CONTRADICTION RULE: For every negative, check: own sign? exalted? vargottama? pushkara? benefic aspect? D9 strong? Vipareeta? If any apply, state: "[negative] exists BUT [positive] partially/fully cancels it. Net result: [balanced conclusion]."
+ 
+CONFIDENCE LABELS (mandatory on every major prediction):
+LOW = 1 indicator → "possible tendency"
+MEDIUM = 2 indicators → "likely"  
+HIGH = 3-4 indicators → "strongly indicated"
+VERY HIGH = 5+ indicators → "very strongly indicated"
+(Only VERY HIGH allows near-certain language. Never say "will definitely".)
+ 
+MINIMUM CONFIRMATIONS: Psychological 3+. Marriage type 2+. Divorce 3+. Family opposition 3+. Second marriage 3+. Wealth conclusions 3+. Foreign settlement 4+.
+ 
+MARRIAGE ORDER: Analyze in sequence: H7 → H7 lord → Venus → Upapada → UL lord → D9 7th → D9 7th lord → Darakaraka → A7 → dasha → transit. Fewer than 4 favorable = "marriage possible but timing unclear."
+ 
+ALWAYS OUTPUT BOTH: positive factor AND blocking factor for every major prediction.
+Format: "[Positive indicator] suggests X, but [negative indicator] suggests friction. Overall: [net conclusion with confidence]."
+ 
+FORBIDDEN: death prediction, terminal disease, exact tragedy, fatal accidents.
+TIMING: Primary + secondary + backup windows always. Never binary.
+CAREER: 3-5 fields always. Never force one.
  
 WEIGHTED SCORING RULE: Use the WEIGHTED SCORES above (not raw planet positions) to determine strength.
 Example: Marriage weighted 35/100 = challenging, not just "Jupiter in H7 = good marriage."
