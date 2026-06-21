@@ -1,4 +1,3 @@
-
 'use strict';
 const { julian, solar, moonposition } = require('astronomia');
  
@@ -649,6 +648,11 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const foreignSettlement = getForeignSettlementIndicators(planets, lagnaIdx, dasha);
   const childrenTiming = getChildrenTiming(planets, lagnaIdx, dasha, transits);
  
+  // Full weighted scores + triple confirmation
+  const weightedScores = getFullWeightedScores(planets, lagnaIdx, allYogas, navamsa, upapadaLordAnalysis, divorceIndicators);
+  const tripleConfirmation = getTripleConfirmation(planets, lagnaIdx,
+    {...dasha, dashaEventTriggers}, transits, allYogas, weightedScores);
+ 
   // Scoring engines
   const planetRanking = getWeightedPlanetRanking(planets, allYogas);
   const contradictions = detectContradictions(planets, allYogas);
@@ -672,6 +676,7 @@ function buildFullChart(dob, tob, place, overrides={}) {
     transitTriggers, refinedMarriage, healthEngine, wealthEngine, propertyEngine,
     argala7, argala10, argala1,
     planetRanking, contradictions, verifiedShockFacts, marriageScores,
+    weightedScores, tripleConfirmation,
     houseSignif:HOUSE_SIGNIF,
     metadata:{calculatedAt:new Date().toISOString(),method:'Lahiri Ayanamsha, Whole Sign Houses'}
   };
@@ -1843,3 +1848,254 @@ module.exports.getHealthEngine = getHealthEngine;
 module.exports.getWealthTimingEngine = getWealthTimingEngine;
 module.exports.getPropertyEngine = getPropertyEngine;
 module.exports.getArgala = getArgala;
+ 
+// ═══════════════════════════════════════════════════
+// WEIGHTED SCORING ENGINE — BATCH 4
+// ═══════════════════════════════════════════════════
+ 
+// ── Weighted indicator system ──
+// Each factor has a weight. Final score = sum of weights.
+// Prediction only made if minimum threshold met.
+ 
+const WEIGHTS = {
+  // Marriage factors
+  marriage: {
+    l7_in_kendra:       { weight: 8,  desc: '7th lord in Kendra — strong marriage promise' },
+    l7_in_trikona:      { weight: 7,  desc: '7th lord in Trikona — auspicious marriage' },
+    l7_in_dusthana:     { weight: -8, desc: '7th lord in dusthana — marriage obstacles' },
+    l7_exalted:         { weight: 9,  desc: '7th lord exalted — excellent spouse' },
+    l7_debilitated:     { weight: -9, desc: '7th lord debilitated — difficult spouse karma' },
+    jupiter_in_7:       { weight: 9,  desc: 'Jupiter in H7 — Hamsa yoga, blessed marriage' },
+    venus_exalted:      { weight: 8,  desc: 'Venus exalted — strong love and beauty' },
+    venus_debilitated:  { weight: -8, desc: 'Venus debilitated — weak romantic karma' },
+    venus_combust:      { weight: -7, desc: 'Venus combust — suppressed love' },
+    venus_rahu:         { weight: -6, desc: 'Rahu-Venus — obsessive/unstable relationships' },
+    saturn_in_7:        { weight: -5, desc: 'Saturn in H7 — delay but eventual stability' },
+    mars_in_7_active:   { weight: -7, desc: 'Mars in H7 active — Mangal Dosha' },
+    rahu_in_7:          { weight: -6, desc: 'Rahu in H7 — unconventional marriage' },
+    ul_strong:          { weight: 7,  desc: 'Upapada lord strong — good marriage quality' },
+    ul_afflicted:       { weight: -7, desc: 'Upapada lord afflicted — troubled marriage' },
+    d9_venus_strong:    { weight: 8,  desc: 'D9 Venus strong — marriage karma positive' },
+    d9_venus_weak:      { weight: -8, desc: 'D9 Venus weak — marriage karma difficult' },
+    d9_7lord_strong:    { weight: 7,  desc: 'D9 7th lord strong — stable marriage destiny' },
+    d9_7lord_weak:      { weight: -7, desc: 'D9 7th lord weak — marriage challenges' },
+    love_yoga:          { weight: 6,  desc: 'Love marriage yoga — romantic meeting indicated' },
+    gajakesari:         { weight: 5,  desc: 'Gajakesari yoga — wisdom and grace in marriage' },
+  },
+  // Career factors
+  career: {
+    l10_in_kendra:      { weight: 9,  desc: '10th lord in Kendra — strong career' },
+    l10_exalted:        { weight: 9,  desc: '10th lord exalted — peak career achievement' },
+    l10_debilitated:    { weight: -8, desc: '10th lord debilitated — career struggles' },
+    sun_strong:         { weight: 7,  desc: 'Strong Sun — authority and leadership' },
+    saturn_strong:      { weight: 7,  desc: 'Strong Saturn — discipline and longevity in career' },
+    mercury_exalted:    { weight: 8,  desc: 'Mercury exalted — communication, intellect excel' },
+    jupiter_in_10:      { weight: 8,  desc: 'Jupiter in H10 — respected profession' },
+    ruchaka:            { weight: 9,  desc: 'Ruchaka yoga — leadership, competitive excellence' },
+    dharma_karma:       { weight: 8,  desc: 'Dharma-Karma yoga — aligned career' },
+    l10_in_dusthana:    { weight: -7, desc: '10th lord in dusthana — career blockages' },
+    saturn_in_10:       { weight: 6,  desc: 'Saturn in H10 — slow but solid rise' },
+  },
+  // Wealth factors
+  wealth: {
+    jupiter_exalted:    { weight: 9,  desc: 'Jupiter exalted — abundant prosperity' },
+    jupiter_in_2_11:    { weight: 8,  desc: 'Jupiter in wealth house — natural financial grace' },
+    l2_l11_exchange:    { weight: 8,  desc: '2nd-11th lord exchange — Dhana Yoga' },
+    venus_strong:       { weight: 7,  desc: 'Strong Venus — material comfort, luxury' },
+    lakshmi_yoga:       { weight: 9,  desc: 'Lakshmi Yoga — exceptional wealth indicated' },
+    l2_debilitated:     { weight: -7, desc: '2nd lord weak — wealth accumulation difficult' },
+    ketu_in_11:         { weight: -4, desc: 'Ketu in H11 — irregular gains, sudden losses' },
+  },
+  // Health factors
+  health: {
+    lagna_lord_strong:  { weight: 7,  desc: 'Lagna lord strong — robust constitution' },
+    mars_in_1:          { weight: 6,  desc: 'Mars in H1 — strong physical energy' },
+    saturn_h6_h8:       { weight: -7, desc: 'Saturn in H6/H8 — chronic conditions' },
+    mars_h6_h8:         { weight: -6, desc: 'Mars in H6/H8 — injury, acute illness' },
+    rahu_h1_h6_h8:      { weight: -6, desc: 'Rahu in health houses — unusual ailments' },
+    moon_h8_h12:        { weight: -5, desc: 'Moon in H8/H12 — mental/emotional stress' },
+    h6_empty:           { weight: 4,  desc: 'H6 empty — less chronic illness tendency' },
+  }
+};
+ 
+function computeWeightedScore(factors, weightTable) {
+  let total = 0;
+  const applied = [];
+  for (const [key, active] of Object.entries(factors)) {
+    if (active && weightTable[key]) {
+      total += weightTable[key].weight;
+      applied.push({ key, ...weightTable[key] });
+    }
+  }
+  // Normalize to 0-100
+  const maxPossible = Object.values(weightTable).reduce((s,w)=>s+(w.weight>0?w.weight:0),0);
+  const minPossible = Object.values(weightTable).reduce((s,w)=>s+(w.weight<0?w.weight:0),0);
+  const normalized = Math.round(((total - minPossible) / (maxPossible - minPossible)) * 100);
+  return { raw: total, normalized: Math.max(0,Math.min(100,normalized)), applied };
+}
+ 
+function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAnalysis, divorceIndicators) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const l7  = RASI_LORD[(lagnaIdx+6)%12];
+  const l10 = RASI_LORD[(lagnaIdx+9)%12];
+  const l2  = RASI_LORD[(lagnaIdx+1)%12];
+  const l11 = RASI_LORD[(lagnaIdx+10)%12];
+ 
+  // Marriage factors
+  const mangalActive = yogas.some(y=>y.name.includes('Mangal Dosha — ACTIVE'));
+  const d9VenusStatus = navamsa?.planets?.Venus?.status || '';
+  const d97Sign = (navamsa?.lagna?.rasiIdx+6)%12;
+  const d97Lord = RASI_LORD[d97Sign];
+  const d97LordStatus = navamsa?.planets?.[d97Lord]?.status || '';
+ 
+  const marriageFactors = {
+    l7_in_kendra:      [1,4,7,10].includes(H(l7)),
+    l7_in_trikona:     [1,5,9].includes(H(l7)),
+    l7_in_dusthana:    [6,8,12].includes(H(l7)),
+    l7_exalted:        ST(l7).includes('Exalted'),
+    l7_debilitated:    ST(l7).includes('Debilitated'),
+    jupiter_in_7:      H('Jupiter')===7,
+    venus_exalted:     ST('Venus').includes('Exalted'),
+    venus_debilitated: ST('Venus').includes('Debilitated'),
+    venus_combust:     planets.Venus?.combust,
+    venus_rahu:        Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10,
+    saturn_in_7:       H('Saturn')===7,
+    mars_in_7_active:  mangalActive && H('Mars')===7,
+    rahu_in_7:         H('Rahu')===7,
+    ul_strong:         upapadaLordAnalysis?.quality?.includes('Strong'),
+    ul_afflicted:      upapadaLordAnalysis?.quality?.includes('Afflicted'),
+    d9_venus_strong:   d9VenusStatus.includes('Exalted')||d9VenusStatus.includes('Own'),
+    d9_venus_weak:     d9VenusStatus.includes('Debilitated')||d9VenusStatus.includes('Enemy'),
+    d9_7lord_strong:   d97LordStatus.includes('Exalted')||d97LordStatus.includes('Own'),
+    d9_7lord_weak:     d97LordStatus.includes('Debilitated')||[6,8,12].includes(navamsa?.planets?.[d97Lord]?.house),
+    love_yoga:         yogas.some(y=>y.name.includes('Love Marriage')),
+    gajakesari:        yogas.some(y=>y.name.includes('Gajakesari')),
+  };
+ 
+  // Career factors
+  const careerFactors = {
+    l10_in_kendra:     [1,4,7,10].includes(H(l10)),
+    l10_exalted:       ST(l10).includes('Exalted'),
+    l10_debilitated:   ST(l10).includes('Debilitated'),
+    sun_strong:        ST('Sun').includes('Exalted')||ST('Sun').includes('Own')||ST('Sun').includes('Mooltrikona'),
+    saturn_strong:     ST('Saturn').includes('Exalted')||ST('Saturn').includes('Own'),
+    mercury_exalted:   ST('Mercury').includes('Exalted'),
+    jupiter_in_10:     H('Jupiter')===10,
+    ruchaka:           yogas.some(y=>y.name.includes('Ruchaka')),
+    dharma_karma:      yogas.some(y=>y.name.includes('Dharma-Karma')),
+    l10_in_dusthana:   [6,8,12].includes(H(l10)),
+    saturn_in_10:      H('Saturn')===10,
+  };
+ 
+  // Wealth factors
+  const wealthFactors = {
+    jupiter_exalted:   ST('Jupiter').includes('Exalted'),
+    jupiter_in_2_11:   [2,11].includes(H('Jupiter')),
+    l2_l11_exchange:   H(l2)===11||H(l11)===2,
+    venus_strong:      ST('Venus').includes('Exalted')||ST('Venus').includes('Own'),
+    lakshmi_yoga:      yogas.some(y=>y.name.includes('Lakshmi')),
+    l2_debilitated:    ST(l2).includes('Debilitated'),
+    ketu_in_11:        H('Ketu')===11,
+  };
+ 
+  // Health factors
+  const healthFactors = {
+    lagna_lord_strong: ST(RASI_LORD[lagnaIdx]).includes('Exalted')||ST(RASI_LORD[lagnaIdx]).includes('Own'),
+    mars_in_1:         H('Mars')===1,
+    saturn_h6_h8:      [6,8].includes(H('Saturn')),
+    mars_h6_h8:        [6,8].includes(H('Mars')),
+    rahu_h1_h6_h8:     [1,6,8].includes(H('Rahu')),
+    moon_h8_h12:       [8,12].includes(H('Moon')),
+    h6_empty:          Object.values(planets).every(p=>p.house!==6),
+  };
+ 
+  const marriage = computeWeightedScore(marriageFactors, WEIGHTS.marriage);
+  const career   = computeWeightedScore(careerFactors,  WEIGHTS.career);
+  const wealth   = computeWeightedScore(wealthFactors,  WEIGHTS.wealth);
+  const health   = computeWeightedScore(healthFactors,  WEIGHTS.health);
+ 
+  // D1 vs D9 weighted marriage (D1=40%, D9=40%, UL/A7=20%)
+  const d1MarriageBase = marriage.normalized;
+  const d9Score = (marriageFactors.d9_venus_strong?80:marriageFactors.d9_venus_weak?20:50)*0.4 +
+                  (marriageFactors.d9_7lord_strong?80:marriageFactors.d9_7lord_weak?20:50)*0.6;
+  const ulScore = (marriageFactors.ul_strong?80:marriageFactors.ul_afflicted?20:50);
+  const marriageBlended = Math.round(d1MarriageBase*0.4 + d9Score*0.4 + ulScore*0.2);
+ 
+  return {
+    marriage: { ...marriage, blended: marriageBlended,
+      summary: `Marriage (blended D1+D9+UL): ${marriageBlended}/100 | D1: ${d1MarriageBase}% | D9: ${Math.round(d9Score)}% | UL: ${ulScore}%` },
+    career:  { ...career,  summary: `Career: ${career.normalized}/100` },
+    wealth:  { ...wealth,  summary: `Wealth: ${wealth.normalized}/100` },
+    health:  { ...health,  summary: `Health resilience: ${health.normalized}/100` },
+    topPositive: [...marriage.applied,...career.applied,...wealth.applied]
+      .filter(f=>f.weight>=7).slice(0,5).map(f=>f.desc),
+    topNegative: [...marriage.applied,...career.applied,...health.applied]
+      .filter(f=>f.weight<=-6).slice(0,5).map(f=>f.desc),
+  };
+}
+ 
+// ── Triple confirmation for major predictions ──
+function getTripleConfirmation(planets, lagnaIdx, dasha, transits, yogas, weightedScores) {
+  const H = name => planets[name]?.house || 0;
+  const l7 = RASI_LORD[(lagnaIdx+6)%12];
+  const confirmations = {};
+ 
+  // Marriage confirmation (need 3 of: Dasha active, Transit active, House activated, Score high)
+  const marriageDashaActive = (dasha.dashaEventTriggers?.marriage?.length > 0);
+  const marriageTransitActive = (transits?.marriage?.length > 0);
+  const marriageHouseActive = H(dasha.current?.lord)===7 || H(dasha.currentAntar?.lord)===7 ||
+    (planets[dasha.current?.lord]?.aspects||[]).includes(7);
+  const marriageScoreHigh = (weightedScores?.marriage?.blended||0) >= 55;
+  const marriageCount = [marriageDashaActive, marriageTransitActive, marriageHouseActive, marriageScoreHigh].filter(Boolean).length;
+  confirmations.marriage = {
+    count: marriageCount,
+    confirmed: marriageCount >= 3,
+    level: marriageCount >= 4 ? 'VERY HIGH' : marriageCount >= 3 ? 'HIGH' : marriageCount >= 2 ? 'MODERATE' : 'LOW',
+    factors: [
+      marriageDashaActive ? 'Dasha active' : '',
+      marriageTransitActive ? 'Transit active' : '',
+      marriageHouseActive ? 'H7 activated' : '',
+      marriageScoreHigh ? `Score ${weightedScores?.marriage?.blended}/100` : '',
+    ].filter(Boolean)
+  };
+ 
+  // Career confirmation
+  const careerDashaActive = (dasha.dashaEventTriggers?.career?.length > 0);
+  const careerTransitActive = (transits?.career?.length > 0);
+  const careerHouseActive = H(dasha.current?.lord)===10 || H(dasha.currentAntar?.lord)===10 ||
+    (planets[dasha.current?.lord]?.aspects||[]).includes(10);
+  const careerScoreHigh = (weightedScores?.career?.normalized||0) >= 55;
+  const careerCount = [careerDashaActive, careerTransitActive, careerHouseActive, careerScoreHigh].filter(Boolean).length;
+  confirmations.career = {
+    count: careerCount,
+    confirmed: careerCount >= 3,
+    level: careerCount >= 4 ? 'VERY HIGH' : careerCount >= 3 ? 'HIGH' : careerCount >= 2 ? 'MODERATE' : 'LOW',
+    factors: [careerDashaActive?'Dasha':'',careerTransitActive?'Transit':'',careerHouseActive?'H10 active':'',careerScoreHigh?'Score high':''].filter(Boolean)
+  };
+ 
+  // Wealth confirmation
+  const wealthDashaActive = (dasha.dashaEventTriggers?.wealth?.length > 0);
+  const wealthTransitActive = (transits?.wealth?.length > 0);
+  const wealthHouseActive = [2,11].includes(H(dasha.currentAntar?.lord)) ||
+    (planets[dasha.currentAntar?.lord]?.aspects||[]).some(h=>[2,11].includes(h));
+  const wealthScoreHigh = (weightedScores?.wealth?.normalized||0) >= 55;
+  const wealthCount = [wealthDashaActive, wealthTransitActive, wealthHouseActive, wealthScoreHigh].filter(Boolean).length;
+  confirmations.wealth = {
+    count: wealthCount,
+    confirmed: wealthCount >= 2,
+    level: wealthCount >= 3 ? 'HIGH' : wealthCount >= 2 ? 'MODERATE' : 'LOW',
+    factors: [wealthDashaActive?'Dasha':'',wealthTransitActive?'Transit':'',wealthHouseActive?'House':'',wealthScoreHigh?'Score high':''].filter(Boolean)
+  };
+ 
+  return {
+    confirmations,
+    summary: Object.entries(confirmations)
+      .map(([k,v])=>`${k.toUpperCase()}: ${v.level} (${v.count}/4 confirmations: ${v.factors.join(', ')})`)
+      .join(' | ')
+  };
+}
+ 
+module.exports.getFullWeightedScores = getFullWeightedScores;
+module.exports.getTripleConfirmation = getTripleConfirmation;
+ 
