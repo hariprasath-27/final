@@ -1,3 +1,4 @@
+
  
 'use strict';
  
@@ -91,6 +92,15 @@ function buildReadingPrompt(chart, person, question) {
     .filter(f => f.confidence === 'HIGH' || f.count >= 2)
     .map(f => f.statement).join(' | ');
   const marriageScoreStr = chart.marriageScores?.summary || '';
+  const weightedStr = chart.weightedScores ? [
+    chart.weightedScores.marriage?.summary,
+    chart.weightedScores.career?.summary,
+    chart.weightedScores.wealth?.summary,
+    chart.weightedScores.health?.summary,
+    'TOP STRENGTHS: '+(chart.weightedScores.topPositive||[]).join(' | '),
+    'TOP RISKS: '+(chart.weightedScores.topNegative||[]).join(' | '),
+  ].join('\n') : '';
+  const tripleConfStr = chart.tripleConfirmation?.summary || '';
   const transitTriggersStr = chart.transitTriggers
     ? [
         chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
@@ -235,6 +245,12 @@ ${contradictionStr||'No major contradictions'}
 MARRIAGE STABILITY SCORES:
 ${marriageScoreStr}
  
+WEIGHTED SCORES (D1+D9+UL blended — use these for strength assessment):
+${weightedStr}
+ 
+TRIPLE CONFIRMATION (event only predicted if 3+ confirmations):
+${tripleConfStr}
+ 
 PSYCHOLOGICAL PROFILE:
 ${psychStr}
  
@@ -282,6 +298,12 @@ ${question ? `\nSPECIFIC QUESTION: ${question}` : ''}
  
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 READING INSTRUCTIONS — FOLLOW EXACTLY:
+ 
+WEIGHTED SCORING RULE: Use the WEIGHTED SCORES above (not raw planet positions) to determine strength.
+Example: Marriage weighted 35/100 = challenging, not just "Jupiter in H7 = good marriage."
+The blended D1+D9+UL score is the most accurate marriage indicator.
+ 
+TRIPLE CONFIRMATION RULE: Only make a confident prediction for marriage/career/wealth/children if 3+ confirmations are active (see TRIPLE CONFIRMATION above). If only 1-2 confirmations, say "possible tendency" not "will happen."
  
 PRIORITY ORDER (use this to weigh your interpretation):
 1. Strongest planets (see PLANET RANKING above) — these dominate the person's life
