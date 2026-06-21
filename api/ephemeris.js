@@ -1,3 +1,4 @@
+
 'use strict';
 const { julian, solar, moonposition } = require('astronomia');
  
@@ -2099,3 +2100,277 @@ function getTripleConfirmation(planets, lagnaIdx, dasha, transits, yogas, weight
 module.exports.getFullWeightedScores = getFullWeightedScores;
 module.exports.getTripleConfirmation = getTripleConfirmation;
  
+// ═══════════════════════════════════════════════════
+// COMPREHENSIVE MATCH SCORING ENGINE
+// ═══════════════════════════════════════════════════
+ 
+const RASI_ELEMENT = {
+  Mesha:'Fire',Simha:'Fire',Dhanu:'Fire',
+  Rishabha:'Earth',Kanya:'Earth',Makara:'Earth',
+  Mithuna:'Air',Tula:'Air',Kumbha:'Air',
+  Kataka:'Water',Vrischika:'Water',Meena:'Water'
+};
+const RASI_MODALITY = {
+  Mesha:'Movable',Kataka:'Movable',Tula:'Movable',Makara:'Movable',
+  Rishabha:'Fixed',Simha:'Fixed',Vrischika:'Fixed',Kumbha:'Fixed',
+  Mithuna:'Dual',Kanya:'Dual',Dhanu:'Dual',Meena:'Dual'
+};
+ 
+// Element compatibility matrix
+function getElementCompat(e1, e2) {
+  if (e1===e2) return { score:90, desc:`Same element (${e1}) — natural harmony and understanding` };
+  const compat = {
+    'Fire-Air':85, 'Air-Fire':85,
+    'Earth-Water':80, 'Water-Earth':80,
+    'Fire-Earth':60, 'Earth-Fire':60,
+    'Air-Water':60, 'Water-Air':60,
+    'Fire-Water':40, 'Water-Fire':40,
+    'Earth-Air':50, 'Air-Earth':50,
+  };
+  const key = `${e1}-${e2}`;
+  const sc = compat[key]||55;
+  return { score:sc, desc:`${e1}+${e2} elements — ${sc>=75?'compatible':sc>=60?'workable':'challenging'}` };
+}
+ 
+// Planet friendship for lord compatibility
+function arePlanetFriends(p1, p2) {
+  return PLANET_FRIENDS[p1]?.includes(p2) || PLANET_FRIENDS[p2]?.includes(p1);
+}
+function arePlanetEnemies(p1, p2) {
+  return PLANET_ENEMIES[p1]?.includes(p2) || PLANET_ENEMIES[p2]?.includes(p1);
+}
+ 
+// Cross-chart aspect check
+function crossAspects(p1Sid, p2House, p2Sid, p1Name) {
+  const orb = 10; // degrees
+  const diff = Math.abs(p1Sid - p2Sid);
+  const normDiff = Math.min(diff, 360-diff);
+  // Check conjunction, opposition, trine, square
+  if (normDiff < orb)   return { type:'conjunction', strength: Math.round((orb-normDiff)/orb*100) };
+  if (Math.abs(normDiff-180) < orb) return { type:'opposition', strength: Math.round((orb-Math.abs(normDiff-180))/orb*100) };
+  if (Math.abs(normDiff-120) < orb) return { type:'trine', strength: Math.round((orb-Math.abs(normDiff-120))/orb*100) };
+  if (Math.abs(normDiff-90)  < orb) return { type:'square', strength: Math.round((orb-Math.abs(normDiff-90))/orb*100) };
+  return null;
+}
+ 
+function computeMatchScore(chart1, chart2, matchResult) {
+  const p1 = chart1.planets, p2 = chart2.planets;
+  const l1 = chart1.lagna, l2 = chart2.lagna;
+  const scores = {};
+ 
+  // ── LAYER 1: CORE COMPATIBILITY (30%) ──
+ 
+  // 1a. Lagna element compatibility (15%)
+  const e1 = RASI_ELEMENT[l1.rasi]||'Air', e2 = RASI_ELEMENT[l2.rasi]||'Air';
+  const elemComp = getElementCompat(e1, e2);
+  scores.lagnaCompat = { score: elemComp.score, weight:0.15, desc: elemComp.desc };
+ 
+  // 1b. Moon sign relationship (15%)
+  const moon1Rasi = chart1.rasi.index, moon2Rasi = chart2.rasi.index;
+  const moonDist = ((moon2Rasi - moon1Rasi + 12)%12)+1;
+  const moonScore = [1,5,9].includes(moonDist)?90:[4,10].includes(moonDist)?80:[3,11].includes(moonDist)?70:
+    moonDist===7?65:[2,12].includes(moonDist)||[6,8].includes(moonDist)?35:60;
+  const moon1Lord = RASI_LORD[moon1Rasi], moon2Lord = RASI_LORD[moon2Rasi];
+  const moonLordBonus = arePlanetFriends(moon1Lord,moon2Lord)?10:arePlanetEnemies(moon1Lord,moon2Lord)?-10:0;
+  scores.moonCompat = {
+    score: Math.min(100,moonScore+moonLordBonus), weight:0.15,
+    desc:`Moon signs ${RASI_NAMES[moon1Rasi]}-${RASI_NAMES[moon2Rasi]} (${moonDist}th relation) — lords ${moon1Lord}/${moon2Lord} ${arePlanetFriends(moon1Lord,moon2Lord)?'friends':'neutral/enemies'}`
+  };
+ 
+  // ── LAYER 2: CHEMISTRY (20%) ──
+ 
+  // 2a. Venus-Mars cross analysis (10%)
+  const vm1 = crossAspects(p1.Venus?.sid||0, p2.Mars?.house||0, p2.Mars?.sid||0, 'Venus');
+  const vm2 = crossAspects(p2.Venus?.sid||0, p1.Mars?.house||0, p1.Mars?.sid||0, 'Venus');
+  let chemScore = 55;
+  if (vm1?.type==='conjunction'||vm2?.type==='conjunction') chemScore=85;
+  else if (vm1?.type==='trine'||vm2?.type==='trine') chemScore=80;
+  else if (vm1?.type==='opposition'||vm2?.type==='opposition') chemScore=70;
+  else if (vm1?.type==='square'||vm2?.type==='square') chemScore=45;
+  scores.venusMarsChemistry = {
+    score:chemScore, weight:0.10,
+    desc:`Venus-Mars cross: ${vm1?`P1 Venus ${vm1.type} P2 Mars`:'no major aspect'}, ${vm2?`P2 Venus ${vm2.type} P1 Mars`:'no major aspect'} — ${chemScore>=75?'strong attraction':chemScore>=60?'moderate chemistry':'weak chemistry'}`
+  };
+ 
+  // 2b. Moon-Venus compatibility (10%)
+  const mv1 = crossAspects(p1.Moon?.sid||0, p2.Venus?.house||0, p2.Venus?.sid||0, 'Moon');
+  const mv2 = crossAspects(p2.Moon?.sid||0, p1.Venus?.house||0, p1.Venus?.sid||0, 'Moon');
+  let mvScore = 55;
+  if (mv1?.type==='conjunction'||mv2?.type==='conjunction') mvScore=85;
+  else if (mv1?.type==='trine'||mv2?.type==='trine') mvScore=78;
+  else if (mv1?.type==='opposition'||mv2?.type==='opposition') mvScore=65;
+  scores.moonVenusSync = {
+    score:mvScore, weight:0.10,
+    desc:`Moon-Venus sync: ${mvScore>=75?'emotional-romantic harmony':mvScore>=60?'workable sync':'emotional disconnect possible'}`
+  };
+ 
+  // ── LAYER 3: MARRIAGE STABILITY (25%) ──
+ 
+  // 3a. 7th house cross match (10%)
+  const h7lord1 = RASI_LORD[(l1.rasiIdx+6)%12], h7lord2 = RASI_LORD[(l2.rasiIdx+6)%12];
+  const h7lord1Status = p1[h7lord1]?.status||'', h7lord2Status = p2[h7lord2]?.status||'';
+  const h7Score1 = h7lord1Status.includes('Exalted')?90:h7lord1Status.includes('Own')?80:
+    h7lord1Status.includes('Debilitated')?30:[6,8,12].includes(p1[h7lord1]?.house)?40:60;
+  const h7Score2 = h7lord2Status.includes('Exalted')?90:h7lord2Status.includes('Own')?80:
+    h7lord2Status.includes('Debilitated')?30:[6,8,12].includes(p2[h7lord2]?.house)?40:60;
+  const h7LordFriends = arePlanetFriends(h7lord1,h7lord2);
+  const h7CrossScore = Math.round((h7Score1+h7Score2)/2) + (h7LordFriends?10:-5);
+  scores.seventhHouse = {
+    score:Math.min(100,h7CrossScore), weight:0.10,
+    desc:`7th lords: P1 ${h7lord1} H${p1[h7lord1]?.house} (${h7lord1Status.split(' ')[0]}) + P2 ${h7lord2} H${p2[h7lord2]?.house} (${h7lord2Status.split(' ')[0]}) — lords ${h7LordFriends?'are friends':'not friends'}`
+  };
+ 
+  // 3b. Upapada compatibility (10%)
+  const ul1 = chart1.upapadaLagna, ul2 = chart2.upapadaLagna;
+  let ulScore = 60;
+  if (ul1&&ul2) {
+    const ulDist = ((ul2.rasiIdx-ul1.rasiIdx+12)%12)+1;
+    ulScore = [1,5,9].includes(ulDist)?85:[4,10].includes(ulDist)?75:
+      [6,8].includes(ulDist)||[2,12].includes(ulDist)?35:60;
+  }
+  const ul1Good = chart1.upapadaLordAnalysis?.quality?.includes('Strong');
+  const ul2Good = chart2.upapadaLordAnalysis?.quality?.includes('Strong');
+  if (ul1Good) ulScore+=8; if (ul2Good) ulScore+=8;
+  if (chart1.upapadaLordAnalysis?.quality?.includes('Afflicted')) ulScore-=10;
+  if (chart2.upapadaLordAnalysis?.quality?.includes('Afflicted')) ulScore-=10;
+  scores.upapadaCompat = {
+    score:Math.min(100,Math.max(0,ulScore)), weight:0.10,
+    desc:`Upapada: P1 ${ul1?.rasi||'N/A'} (${chart1.upapadaLordAnalysis?.quality?.split('—')[0]||'?'}) vs P2 ${ul2?.rasi||'N/A'} (${chart2.upapadaLordAnalysis?.quality?.split('—')[0]||'?'})`
+  };
+ 
+  // 3c. A7 compatibility (5%)
+  const a7_1 = chart1.a7, a7_2 = chart2.a7;
+  let a7Score = 60;
+  if (a7_1&&a7_2) {
+    const a7Dist = ((a7_2.rasiIdx-a7_1.rasiIdx+12)%12)+1;
+    a7Score = [1,5,9].includes(a7Dist)?80:[4,10].includes(a7Dist)?70:[6,8].includes(a7Dist)?35:60;
+  }
+  scores.a7Compat = {
+    score:a7Score, weight:0.05,
+    desc:`A7 (relationship image): P1 ${a7_1?.rasi||'?'} vs P2 ${a7_2?.rasi||'?'}`
+  };
+ 
+  // ── LAYER 4: KARMIC ALIGNMENT (15%) ──
+ 
+  // 4a. Darakaraka cross-match (10%)
+  const dk1 = chart1.karakas?.Darakaraka, dk2 = chart2.karakas?.Darakaraka;
+  let dkScore = 60;
+  if (dk1&&dk2&&p1[dk1]&&p2[dk2]) {
+    const dkAspect = crossAspects(p1[dk1].sid, p2[dk2].house, p2[dk2].sid, dk1);
+    const dkFriends = arePlanetFriends(dk1,dk2);
+    if (dkAspect?.type==='conjunction') dkScore=90;
+    else if (dkAspect?.type==='trine') dkScore=80;
+    else if (dkAspect?.type==='opposition') dkScore=65;
+    if (dkFriends) dkScore+=10; else if (arePlanetEnemies(dk1,dk2)) dkScore-=10;
+  }
+  scores.darakaraka = {
+    score:Math.min(100,dkScore), weight:0.10,
+    desc:`Darakaraka: P1 ${dk1||'?'} (H${p1[dk1]?.house||'?'}) vs P2 ${dk2||'?'} (H${p2[dk2]?.house||'?'}) — ${arePlanetFriends(dk1||'',dk2||'')?'friends, good karmic bond':arePlanetEnemies(dk1||'',dk2||'')?'enemies, karmic tension':'neutral'}`
+  };
+ 
+  // 4b. Atmakaraka compatibility (5%)
+  const ak1 = chart1.karakas?.Atmakaraka, ak2 = chart2.karakas?.Atmakaraka;
+  const akFriends = ak1&&ak2?arePlanetFriends(ak1,ak2):false;
+  const akEnemies = ak1&&ak2?arePlanetEnemies(ak1,ak2):false;
+  scores.atmakaraka = {
+    score:akFriends?80:akEnemies?35:60, weight:0.05,
+    desc:`Atmakaraka: P1 ${ak1||'?'} vs P2 ${ak2||'?'} — soul-level ${akFriends?'resonance':akEnemies?'friction':'neutral'}`
+  };
+ 
+  // ── LAYER 5: NAVAMSA (15%) ──
+ 
+  // 5a. D9 Lagna compatibility (5%)
+  const d9l1 = chart1.navamsa?.lagna?.rasiIdx||0, d9l2 = chart2.navamsa?.lagna?.rasiIdx||0;
+  const d9LagnaDist = ((d9l2-d9l1+12)%12)+1;
+  const d9LagnaScore = [1,5,9].includes(d9LagnaDist)?85:[4,10].includes(d9LagnaDist)?75:[6,8].includes(d9LagnaDist)?35:60;
+  scores.d9Lagna = {
+    score:d9LagnaScore, weight:0.05,
+    desc:`D9 Lagna: P1 ${RASI_NAMES[d9l1]} vs P2 ${RASI_NAMES[d9l2]} (${d9LagnaDist}th relation)`
+  };
+ 
+  // 5b. D9 Venus comparison (10%)
+  const d9v1 = chart1.navamsa?.planets?.Venus, d9v2 = chart2.navamsa?.planets?.Venus;
+  const d9v1Score = d9v1?.status.includes('Exalted')?90:d9v1?.status.includes('Own')?80:d9v1?.status.includes('Debilitated')?20:55;
+  const d9v2Score = d9v2?.status.includes('Exalted')?90:d9v2?.status.includes('Own')?80:d9v2?.status.includes('Debilitated')?20:55;
+  const d9VenusScore = Math.round((d9v1Score+d9v2Score)/2);
+  scores.d9Venus = {
+    score:d9VenusScore, weight:0.10,
+    desc:`D9 Venus: P1 ${d9v1?.rasi||'?'} H${d9v1?.house||'?'} (${d9v1?.status?.split(' ')[0]||'?'}) | P2 ${d9v2?.rasi||'?'} H${d9v2?.house||'?'} (${d9v2?.status?.split(' ')[0]||'?'})`
+  };
+ 
+  // ── LAYER 6: RISK DETECTION (10%) ──
+ 
+  // Mangal cross-match
+  const m1Active = chart1.yogas?.some(y=>y.name.includes('Mangal Dosha — ACTIVE'));
+  const m2Active = chart2.yogas?.some(y=>y.name.includes('Mangal Dosha — ACTIVE'));
+  const mangalOk = (m1Active&&m2Active)||(!m1Active&&!m2Active);
+  const mangalRisk = m1Active!==m2Active ? 25 : 0;
+ 
+  // Divorce indicator overlap
+  const di1 = chart1.divorceIndicators?.count||0, di2 = chart2.divorceIndicators?.count||0;
+  const divorceRisk = Math.min(100, (di1+di2)*10);
+ 
+  // Venus affliction mismatch
+  const va1 = chart1.venusAffliction?.score||0, va2 = chart2.venusAffliction?.score||0;
+  const venusRisk = Math.round((va1+va2)/2);
+ 
+  // Saturn-Mars cross clash
+  const satMarsClash = (chart1.planets.Saturn?.aspects||[]).includes(chart2.planets.Mars?.house) ||
+    (chart2.planets.Saturn?.aspects||[]).includes(chart1.planets.Mars?.house);
+ 
+  const riskScore = Math.max(0, 100 - mangalRisk - divorceRisk*0.3 - venusRisk*0.2 - (satMarsClash?10:0));
+  scores.riskFactors = {
+    score:Math.round(riskScore), weight:0.10,
+    desc:`Risk: Mangal ${mangalOk?'matched':'MISMATCH'} | Divorce indicators ${di1+di2} total | Venus affliction avg ${Math.round((va1+va2)/2)}/100 | Saturn-Mars clash: ${satMarsClash?'YES':'no'}`
+  };
+ 
+  // ── LAYER 7: TIMING ALIGNMENT (5%) ──
+  const mw1 = chart1.refinedMarriage?.windows||[], mw2 = chart2.refinedMarriage?.windows||[];
+  // Check overlap in marriage windows
+  let timingOverlap = false;
+  for (const w1 of mw1) {
+    for (const w2 of mw2) {
+      const s1=new Date(w1.dates?.split(' to ')[0]||'2030'), e1=new Date(w1.dates?.split(' to ')[1]||'2031');
+      const s2=new Date(w2.dates?.split(' to ')[0]||'2032'), e2=new Date(w2.dates?.split(' to ')[1]||'2033');
+      if (s1<=e2&&s2<=e1) { timingOverlap=true; break; }
+    }
+    if (timingOverlap) break;
+  }
+  scores.timingAlignment = {
+    score:timingOverlap?85:50, weight:0.05,
+    desc:`Marriage timing overlap: ${timingOverlap?'YES — windows align, good for joint marriage':'Windows may not align — timing needs careful planning'}`
+  };
+ 
+  // ── PORUTHAM INTEGRATION (included in overall) ──
+  const porScore = matchResult?.pct||50;
+  scores.porutham = {
+    score:porScore, weight:0.05,
+    desc:`10 Porutham: ${matchResult?.totalScore||0}/${matchResult?.maxScore||44} (${porScore}%) — ${matchResult?.verdict||''}`
+  };
+ 
+  // ── COMPUTE FINAL SCORES ──
+  const weighted = Object.values(scores).reduce((sum,s) => sum + s.score*s.weight, 0);
+  const overall = Math.round(weighted);
+ 
+  // Domain scores
+  const emotional = Math.round((scores.moonCompat.score*0.5 + scores.moonVenusSync.score*0.3 + scores.lagnaCompat.score*0.2));
+  const physical  = Math.round((scores.venusMarsChemistry.score*0.6 + scores.moonVenusSync.score*0.4));
+  const stability = Math.round((scores.seventhHouse.score*0.35 + scores.upapadaCompat.score*0.35 + scores.a7Compat.score*0.15 + scores.porutham.score*0.15));
+  const karmic    = Math.round((scores.darakaraka.score*0.5 + scores.atmakaraka.score*0.25 + scores.d9Lagna.score*0.25));
+  const conflict  = Math.round(100 - scores.riskFactors.score);
+  const longterm  = Math.round((stability*0.4 + karmic*0.3 + scores.d9Venus.score*0.3));
+ 
+  const verdict = overall>=80?'Excellent Match':overall>=70?'Very Good Match':overall>=60?'Good Match':
+    overall>=50?'Acceptable Match':overall>=40?'Challenging Match':'Difficult Match';
+ 
+  return {
+    scores, overall, emotional, physical, stability, karmic, conflict, longterm,
+    verdict,
+    topStrengths: Object.entries(scores).filter(([,s])=>s.score>=75).map(([k,s])=>s.desc).slice(0,4),
+    topConcerns:  Object.entries(scores).filter(([,s])=>s.score<45).map(([k,s])=>s.desc).slice(0,4),
+    mangalOk, timingOverlap, satMarsClash,
+    summary: `Overall: ${overall}/100 (${verdict}) | Emotional: ${emotional}% | Physical: ${physical}% | Stability: ${stability}% | Karmic: ${karmic}% | Conflict risk: ${conflict}% | Long-term: ${longterm}%`
+  };
+}
+ 
+module.exports.computeMatchScore = computeMatchScore;
