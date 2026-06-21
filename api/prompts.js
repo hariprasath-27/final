@@ -1,5 +1,3 @@
-
- 
 'use strict';
  
 function buildReadingPrompt(chart, person, question) {
@@ -101,6 +99,22 @@ function buildReadingPrompt(chart, person, question) {
     'TOP RISKS: '+(chart.weightedScores.topNegative||[]).join(' | '),
   ].join('\n') : '';
   const tripleConfStr = chart.tripleConfirmation?.summary || '';
+ 
+  // Batch 5 precision data
+  const lifeStageStr = chart.lifeStage
+    ? `Life Stage: ${chart.lifeStage.stage} | ${chart.lifeStage.note}${chart.lifeStage.invalidPredictions?.length ? ' | INVALID for this age: '+chart.lifeStage.invalidPredictions.join(', ') : ''}`
+    : '';
+  const maturityStr = chart.planetMaturity
+    ? `Mature planets (stable results): ${chart.planetMaturity.matureNow?.join(', ')||'none'} | Immature (unstable): ${chart.planetMaturity.immatureNow?.join(', ')||'none'}`
+    : '';
+  const funcNatureStr = chart.functionalNature
+    ? Object.entries(chart.functionalNature).map(([p,n])=>`${p}:${n.role}`).join(' | ')
+    : '';
+  const relKarmaStr = chart.relationshipKarma?.summary || '';
+  const resistanceStr = chart.manifestationResistance?.summary || '';
+  const bhriguStr = chart.bhriguBindu?.summary || '';
+  const unfinishedStr = chart.unfinishedKarma?.summary || '';
+  const probMatrixStr = chart.probabilityMatrix?.summary || '';
   const transitTriggersStr = chart.transitTriggers
     ? [
         chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
@@ -251,6 +265,21 @@ ${weightedStr}
 TRIPLE CONFIRMATION (event only predicted if 3+ confirmations):
 ${tripleConfStr}
  
+LIFE STAGE CONTEXT (age filter — do not make predictions invalid for this age):
+${lifeStageStr}
+ 
+PLANET MATURITY (immature planets give unstable/delayed results):
+${maturityStr}
+ 
+FUNCTIONAL NATURE FOR THIS LAGNA (use this, not generic planet nature):
+${funcNatureStr}
+ 
+RELATIONSHIP KARMA: ${relKarmaStr}
+MANIFESTATION RESISTANCE: ${resistanceStr}
+UNFINISHED KARMA: ${unfinishedStr}
+BHRIGU BINDU: ${bhriguStr}
+PROBABILITY MATRIX: ${probMatrixStr}
+ 
 PSYCHOLOGICAL PROFILE:
 ${psychStr}
  
@@ -298,6 +327,16 @@ ${question ? `\nSPECIFIC QUESTION: ${question}` : ''}
  
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 READING INSTRUCTIONS — FOLLOW EXACTLY:
+ 
+GUARDRAIL RULES — ENFORCE THESE FOR EVERY STATEMENT:
+1. MINIMUM CONFIRMATIONS: Psychological traits need 3+. Marriage type needs 2+. Divorce needs 3+. Family opposition needs 3+. Second marriage needs 3+. If below threshold, mark LOW confidence.
+2. EMPTY HOUSES: Never conclude absence from empty house. Always check house lord. Empty H7 ≠ no marriage. Empty H5 ≠ no children.
+3. NO INFERENCE JUMPS: H12 ≠ parental control. Sun H4 ≠ father decides marriage. Moon H12 alone ≠ cold mother. Venus affliction alone ≠ family rejection.
+4. CONTRADICTION: If two indicators conflict, state both. "X suggests delay, but Y suggests eventual success." Never pick one side.
+5. CONFIDENCE: Label every major prediction HIGH (3+ confirm) / MEDIUM (2 confirm) / LOW (1 confirm).
+6. FORBIDDEN: Never predict death, terminal disease, exact tragedy. Never state trauma as fact without 3+ indicators.
+7. TIMING: Give primary + secondary + backup windows. Never binary ("marry by 28 or never").
+8. CAREER: Give 3-5 possible fields. Never force one profession.
  
 WEIGHTED SCORING RULE: Use the WEIGHTED SCORES above (not raw planet positions) to determine strength.
 Example: Marriage weighted 35/100 = challenging, not just "Jupiter in H7 = good marriage."
