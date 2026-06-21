@@ -67,6 +67,17 @@ ${co.map(c=>`${c.planet}: ${c.resolution}`).join('\n') || 'None'}
 VERIFIED PSYCHOLOGICAL PATTERNS (2-3+ indicators confirmed — use these only):
 ${sf.filter(f=>f.count>=2).map(f=>`[${f.confidence}] ${f.statement}`).join('\n') || 'No high-confidence patterns'}
  
+WEIGHTED SCORES (blended D1+D9+UL — primary accuracy indicator):
+Marriage (blended): ${chart.weightedScores?.marriage?.blended}/100
+Career score: ${chart.weightedScores?.career?.normalized}/100
+Wealth score: ${chart.weightedScores?.wealth?.normalized}/100
+Health resilience: ${chart.weightedScores?.health?.normalized}/100
+Top strengths: ${(chart.weightedScores?.topPositive||[]).join(' | ')}
+Top risks: ${(chart.weightedScores?.topNegative||[]).join(' | ')}
+ 
+TRIPLE CONFIRMATION (predict confidently only if 3+ active):
+${chart.tripleConfirmation?.summary||''}
+ 
 MARRIAGE FACT SHEET:
 Overall stability score: ${ms?.overall}/100
 Emotional compatibility: ${ms?.emotional}%
