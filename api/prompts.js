@@ -1,4 +1,4 @@
-
+ 
 'use strict';
  
 function buildReadingPrompt(chart, person, question) {
@@ -26,6 +26,94 @@ function buildReadingPrompt(chart, person, question) {
   const antarLines = d.antardashas.map(a=>
     `  ${d.current?.lord}-${a.lord} Bhukti: ${a.startDate} → ${a.endDate}${a===d.currentAntar?' ← CURRENT':''}`
   ).join('\n');
+ 
+  // New computed fields
+  const moonPhaseStr = chart.moonPhase
+    ? `${chart.moonPhase.paksha} | Tithi ${chart.moonPhase.tithi} | Sun-Moon angle ${chart.moonPhase.diff}°`
+    : '';
+  const karakaStr = chart.karakas
+    ? Object.entries(chart.karakas).map(([k,v])=>`${k}: ${v}`).join(' | ')
+    : '';
+  const arudhaStr = chart.arudhaLagna ? `${chart.arudhaLagna.rasi}` : '';
+  const upapadaStr = chart.upapadaLagna ? `${chart.upapadaLagna.rasi}` : '';
+  const navamsaStr = chart.navamsa
+    ? Object.entries(chart.navamsa.planets)
+        .map(([n,p])=>`${n}:${p.rasi} H${p.house} ${p.status.split(' ')[0]}`)
+        .join(' | ')
+    : '';
+  const aspectStr = chart.houseAspects
+    ? Object.entries(chart.houseAspects)
+        .filter(([,pl])=>pl.length)
+        .map(([h,pl])=>`H${h}<-${pl.join(',')}`)
+        .join(' ')
+    : '';
+ 
+  // Advanced engine data
+  const houseLordStr = chart.houseLords
+    ? Object.entries(chart.houseLords).map(([h,l])=>l.summary).join('\n')
+    : '';
+  const transitStr = chart.transits?.summary || '';
+  const venusStr = chart.venusAffliction?.summary || '';
+  const divorceStr = chart.divorceIndicators?.summary || '';
+  const psychStr = chart.psychProfile?.summary || '';
+  const gandantaStr = chart.gandanta?.length
+    ? chart.gandanta.map(g=>g.desc).join(' | ') : 'No Gandanta planets';
+  const a7Str = chart.a7?.rasi || '';
+  const d10Str = chart.d10 ? Object.entries(chart.d10.planets)
+    .map(([n,p])=>`${n}:${p.rasi} H${p.house}`).join(' | ') : '';
+  const d7Str = chart.d7 ? `Jupiter in D7: ${chart.d7.planets?.Jupiter?.rasi} H${chart.d7.planets?.Jupiter?.house}` : '';
+  const sadeSati = chart.transits?.sadeSati ? 'YES — SADE SATI ACTIVE' : 'No';
+  const dashaTriggersStr = chart.dashaEventTriggers
+    ? [
+        chart.dashaEventTriggers.marriage?.length ? 'Marriage windows: '+chart.dashaEventTriggers.marriage.slice(0,3).join(', ') : '',
+        chart.dashaEventTriggers.career?.length   ? 'Career windows: '+chart.dashaEventTriggers.career.slice(0,2).join(', ') : '',
+        chart.dashaEventTriggers.wealth?.length   ? 'Wealth windows: '+chart.dashaEventTriggers.wealth.slice(0,2).join(', ') : '',
+        chart.dashaEventTriggers.children?.length ? 'Children windows: '+chart.dashaEventTriggers.children.slice(0,2).join(', ') : '',
+        chart.dashaEventTriggers.foreign?.length  ? 'Foreign windows: '+chart.dashaEventTriggers.foreign.slice(0,2).join(', ') : '',
+        chart.dashaEventTriggers.currentPratyantar ? 'Current Pratyantar: '+chart.dashaEventTriggers.currentPratyantar : '',
+      ].filter(Boolean).join(' | ')
+    : '';
+  const upapadaLordStr = chart.upapadaLordAnalysis?.summary || '';
+  const navamsaMarriageStr = chart.navamsaMarriage?.summary || '';
+  const secondMarriageStr = chart.secondMarriage?.summary || '';
+  const secretRelStr = chart.secretRelationship?.summary || '';
+  const foreignStr = chart.foreignSettlement?.summary || '';
+  const childrenTimingStr = chart.childrenTiming?.summary || '';
+ 
+  // Scoring engine data
+  const rankingStr = chart.planetRanking
+    ? 'STRONGEST: ' + (chart.planetRanking.strongest||[]).join(' | ') +
+      ' || WEAKEST: ' + (chart.planetRanking.weakest||[]).join(' | ')
+    : '';
+  const contradictionStr = (chart.contradictions||[])
+    .map(c => c.resolution).join(' | ');
+  const shockFactsStr = (chart.verifiedShockFacts||[])
+    .filter(f => f.confidence === 'HIGH' || f.count >= 2)
+    .map(f => f.statement).join(' | ');
+  const marriageScoreStr = chart.marriageScores?.summary || '';
+  const transitTriggersStr = chart.transitTriggers
+    ? [
+        chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
+        chart.transitTriggers.career?.length    ? 'CAREER TRIGGERS: '+chart.transitTriggers.career.join(' | ')      : '',
+        chart.transitTriggers.wealth?.length    ? 'WEALTH TRIGGERS: '+chart.transitTriggers.wealth.join(' | ')      : '',
+        chart.transitTriggers.health?.length    ? 'HEALTH TRIGGERS: '+chart.transitTriggers.health.join(' | ')      : '',
+        chart.transitTriggers.property?.length  ? 'PROPERTY TRIGGERS: '+chart.transitTriggers.property.join(' | ') : '',
+        'Current transit positions: Jupiter in '+chart.transitTriggers.currentPositions?.jupiter+
+          ', Saturn in '+chart.transitTriggers.currentPositions?.saturn+
+          ', Rahu in '+chart.transitTriggers.currentPositions?.rahu,
+        chart.transitTriggers.doubleTransitActive ? 'DOUBLE TRANSIT ACTIVE — major life event now' : '',
+      ].filter(Boolean).join('\n')
+    : '';
+  const refinedMarriageStr = chart.refinedMarriage?.summary || '';
+  const healthEngineStr = chart.healthEngine?.summary || '';
+  const wealthEngineStr = chart.wealthEngine?.summary || '';
+  const propertyEngineStr = chart.propertyEngine?.summary || '';
+  const argalaStr = [
+    chart.argala7  ? 'H7 (marriage): '+chart.argala7.summary  : '',
+    chart.argala10 ? 'H10 (career): '+chart.argala10.summary  : '',
+    chart.argala1  ? 'H1 (self): '+chart.argala1.summary      : '',
+  ].filter(Boolean).join('\n');
+  const doubleTransit = chart.transits?.doubleTransit ? 'YES — major events likely now' : 'No';
  
   const yogaLines = chart.yogas.map(y => {
     // Compute nullification on the fly from chart data
@@ -94,7 +182,85 @@ ${planetLines}
 HOUSES:
 ${houseLines}
  
-VIMSHOTTARI DASHA:
+VIMSHOTTARI HOUSE LORDS (every house lord placement — critical for reading):
+${houseLordStr}
+ 
+CURRENT TRANSITS (live planetary positions now):
+${transitStr}
+Sade Sati: ${sadeSati}
+Double Transit: ${doubleTransit}
+ 
+MARRIAGE ANALYSIS:
+Venus Affliction: ${venusStr}
+Divorce Indicators: ${divorceStr}
+A7 Darapada (relationship image): ${a7Str}
+Upapada Lord Analysis: ${upapadaLordStr}
+Navamsa Marriage Engine: ${navamsaMarriageStr}
+Second Marriage Indicators: ${secondMarriageStr}
+Secret Relationship Indicators: ${secretRelStr}
+ 
+DASHA EVENT TRIGGERS (when specific events are most likely):
+${dashaTriggersStr}
+ 
+CHILDREN TIMING: ${childrenTimingStr}
+FOREIGN SETTLEMENT: ${foreignStr}
+ 
+REFINED MARRIAGE TRIGGER (2-of-4 rule applied):
+${refinedMarriageStr}
+ 
+EXACT TRANSIT TRIGGERS RIGHT NOW:
+${transitTriggersStr}
+ 
+HEALTH ENGINE:
+${healthEngineStr}
+ 
+WEALTH TIMING ENGINE:
+${wealthEngineStr}
+ 
+PROPERTY ENGINE:
+${propertyEngineStr}
+ 
+ARGALA (hidden influences on key houses):
+${argalaStr}
+ 
+PLANET RANKING (weighted by bala + yogas + combustion):
+${rankingStr}
+ 
+VERIFIED PSYCHOLOGICAL PATTERNS (3+ indicators confirmed):
+${shockFactsStr||'No high-confidence psychological patterns detected'}
+ 
+CONTRADICTIONS TO RESOLVE (planet is both strong and afflicted):
+${contradictionStr||'No major contradictions'}
+ 
+MARRIAGE STABILITY SCORES:
+${marriageScoreStr}
+ 
+PSYCHOLOGICAL PROFILE:
+${psychStr}
+ 
+GANDANTA PLANETS:
+${gandantaStr}
+ 
+D10 CAREER CHART: ${d10Str}
+D7 CHILDREN CHART: ${d7Str}
+ 
+MOON PHASE: ${moonPhaseStr}
+ARUDHA LAGNA (public image/reputation): ${arudhaStr}
+UPAPADA LAGNA (marriage quality indicator): ${upapadaStr}
+KARAKAS: ${karakaStr}
+ 
+NAVAMSA D9 (marriage/soul chart):
+${navamsaStr}
+ 
+HOUSE ASPECTS (which planets cast influence on which houses):
+${aspectStr}
+ 
+PLANETARY CONDITIONS:
+${Object.entries(chart.planets).map(([n,p])=>
+  n+': Bala '+p.bala+' | '+(p.retrograde?'RETROGRADE ':' ')+(p.combust?'COMBUST ':' ')+'Avastha:'+p.avastha+' | D9:'+p.navamsaRasi
+).join('\n')}
+ 
+DASHA:
 Past Dashas:
 ${pastDashas}
 CURRENT: ${d.current?.lord} Mahadasha (${d.current?.startDate} → ${d.current?.endDate})
@@ -115,7 +281,29 @@ For EVERY Dosha in this chart: check all nullification conditions above and stat
 ${question ? `\nSPECIFIC QUESTION: ${question}` : ''}
  
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Now give a complete Tamil Jyotish reading. For EVERY point, state exactly which planet in which house causes what. Use specific years and ages. Structure with these headers:
+READING INSTRUCTIONS — FOLLOW EXACTLY:
+ 
+PRIORITY ORDER (use this to weigh your interpretation):
+1. Strongest planets (see PLANET RANKING above) — these dominate the person's life
+2. Weakest/afflicted planets — these create the recurring struggles
+3. Lagna + Lagna lord condition — fundamental life direction
+4. Moon + Nakshatra — emotional patterns and psychology
+5. Atmakaraka — soul-level karma and life purpose
+6. Current Mahadasha + Antardasha + Pratyantar — what is active RIGHT NOW
+7. Transit triggers — exact timing of events
+8. Yogas — special gifts and burdens
+9. Doshas — where remedies are needed
+10. D9 marriage engine — relationship destiny
+ 
+CONTRADICTION RULE: If a planet has both positive and negative indicators (see CONTRADICTIONS above), do NOT choose one side. State both and explain how they interact. Example: "Venus is dignified but combust — the potential is real but expressed inconsistently, with moments of clarity followed by confusion."
+ 
+PROBABILITY LANGUAGE: Never say "you will divorce" or "you will succeed." Say "there is a high tendency" or "the chart strongly suggests" or "this is likely if current patterns continue." Differentiate between a tendency (chart shows inclination) and an event (dasha + transit both active).
+ 
+VERIFIED PSYCHOLOGICAL PATTERNS: Use only the confirmed patterns from VERIFIED PSYCHOLOGICAL PATTERNS section above. Do not invent additional psychological claims without chart evidence.
+ 
+FACTS NOT POETRY: State what, when, and the brief astrological reason. No long explanations. No generic statements.
+ 
+Now give the reading structured with these headers:
  
 === CHARACTER & PERSONALITY ===
 (Based on Lagna lord position, Rasi, Nakshatra nature — describe their appearance, personality, strengths, weaknesses, thinking style, emotional nature. Be very specific.)
