@@ -681,6 +681,16 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const transitHeatmap = getTransitHeatmap(lagnaIdx, planets.Moon.rasiIdx);
   const dusthanaTransformations = getDusthanaTransformations(planets, lagnaIdx, allYogas);
  
+  // Batch 7 — Certainty & Precision
+  const rectificationWarning = getRectificationWarning(lagna, planets);
+  const marriageTriggerStack = getMarriageTriggerStack(planets, lagnaIdx, {...dasha, dashaEventTriggers}, transitTriggers, karakas, upapadaLagna, navamsa, weightedScores);
+  const venusAfflictionDetailed = getAfflictionSeverityDetailed('Venus', planets, lagnaIdx, allYogas);
+  const saturnAfflictionDetailed = getAfflictionSeverityDetailed('Saturn', planets, lagnaIdx, allYogas);
+  const marriageProtector = getDomainProtector(planets, lagnaIdx, allYogas, 'marriage');
+  const careerProtector = getDomainProtector(planets, lagnaIdx, allYogas, 'career');
+  const wealthProtector = getDomainProtector(planets, lagnaIdx, allYogas, 'wealth');
+  const karmaClassification = getKarmaClassification(planets, lagnaIdx, allYogas, karakas);
+ 
   return {
     input:{dob,tob,place,coords},
     jd:jdUT, ayanamsha:parseFloat(ayanamsha.toFixed(4)),
@@ -703,6 +713,9 @@ function buildFullChart(dob, tob, place, overrides={}) {
     relationshipKarma, manifestationResistance, bhriguBindu, unfinishedKarma,
     vargottama, pushkaraNavamsa, planetDominance, dashaQuality,
     birthTimeConfidence, recoveryIndicators, transitHeatmap, dusthanaTransformations,
+    rectificationWarning, marriageTriggerStack,
+    venusAfflictionDetailed, saturnAfflictionDetailed,
+    marriageProtector, careerProtector, wealthProtector, karmaClassification,
     houseSignif:HOUSE_SIGNIF,
     metadata:{calculatedAt:new Date().toISOString(),method:'Lahiri Ayanamsha, Whole Sign Houses'}
   };
@@ -3047,3 +3060,280 @@ module.exports.getBirthTimeConfidence = getBirthTimeConfidence;
 module.exports.getRecoveryIndicators = getRecoveryIndicators;
 module.exports.getTransitHeatmap = getTransitHeatmap;
 module.exports.getDusthanaTransformations = getDusthanaTransformations;
+ 
+// ═══════════════════════════════════════════════════
+// ADVANCED ENGINE — BATCH 7: CERTAINTY & PRECISION
+// ═══════════════════════════════════════════════════
+ 
+// ── 1. Certainty Engine ──
+// confidence = supporting signals - blocking signals → normalized 0-100%
+function getCertaintyScore(supportingSignals, blockingSignals, label) {
+  const net = supportingSignals.length - blockingSignals.length;
+  const total = supportingSignals.length + blockingSignals.length;
+  // Normalize: net of +5 = 100%, net of -5 = 0%, 0 = 50%
+  const raw = Math.round(50 + (net / Math.max(total, 1)) * 50);
+  const score = Math.max(5, Math.min(95, raw));
+  const level = score >= 80 ? 'VERY HIGH' : score >= 65 ? 'HIGH' : score >= 45 ? 'MEDIUM' : 'LOW';
+  return {
+    label, score, level,
+    supporting: supportingSignals,
+    blocking: blockingSignals,
+    supportCount: supportingSignals.length,
+    blockCount: blockingSignals.length,
+    summary: `${label}: ${score}% confidence (${level}) | ${supportingSignals.length} supporting, ${blockingSignals.length} blocking`
+  };
+}
+ 
+// ── 3. Trigger Stack Engine ──
+// Event = Natal Promise × Dasha × Transit × House Lord × Divisional
+function getTriggerStack(event, checks) {
+  // checks = { natal, dasha, transit, houseLord, divisional }
+  const stack = [
+    { name: 'Natal Promise',      active: !!checks.natal,      desc: checks.natal      || 'not confirmed' },
+    { name: 'Dasha Activation',   active: !!checks.dasha,      desc: checks.dasha      || 'not active'    },
+    { name: 'Transit Trigger',    active: !!checks.transit,    desc: checks.transit    || 'not active'    },
+    { name: 'House Lord Active',  active: !!checks.houseLord,  desc: checks.houseLord  || 'not active'    },
+    { name: 'Divisional Support', active: !!checks.divisional, desc: checks.divisional || 'not confirmed' },
+  ];
+  const count = stack.filter(s => s.active).length;
+  const strength = count === 5 ? 'CERTAIN' : count === 4 ? 'VERY STRONG' : count === 3 ? 'STRONG' :
+    count === 2 ? 'POSSIBLE' : 'WEAK';
+  return {
+    event, stack, count, strength,
+    summary: `${event} trigger stack: ${count}/5 (${strength}) | ${stack.filter(s=>s.active).map(s=>s.name).join(' + ')}`
+  };
+}
+ 
+// ── Marriage Trigger Stack ──
+function getMarriageTriggerStack(planets, lagnaIdx, dasha, transits, karakas, upapadaLagna, navamsa, weightedScores) {
+  const H = name => planets[name]?.house || 0;
+  const l7 = RASI_LORD[(lagnaIdx+6)%12];
+  const dk = karakas?.Darakaraka;
+ 
+  // Natal promise: H7 lord strong, Venus dignified, UL good, DK strong
+  const l7Good = !['Debilitated','Enemy'].some(s => planets[l7]?.status?.includes(s)) && ![6,8,12].includes(H(l7));
+  const venusGood = !planets.Venus?.combust && !planets.Venus?.status.includes('Debilitated');
+  const ulGood = upapadaLagna && ![6,8,12].includes(planets[RASI_LORD[upapadaLagna.rasiIdx]]?.house);
+  const d9VenusGood = !navamsa?.planets?.Venus?.status.includes('Debilitated');
+  const natalCount = [l7Good, venusGood, ulGood, d9VenusGood].filter(Boolean).length;
+  const natal = natalCount >= 2 ? `${natalCount}/4 marriage indicators strong (H7 lord, Venus, UL, D9 Venus)` : null;
+ 
+  // Dasha activation
+  const dashaActive = dasha.dashaEventTriggers?.marriage?.length > 0;
+  const dashaDesc = dashaActive ? `${dasha.current?.lord}–${dasha.currentAntar?.lord} activates marriage houses` : null;
+ 
+  // Transit trigger
+  const transitActive = transits.marriage?.length > 0 || transits.doubleTransitActive;
+  const transitDesc = transitActive ? (transits.marriage?.[0] || 'Double transit active') : null;
+ 
+  // House lord active
+  const houseLordActive = H(dasha.current?.lord) === 7 || H(dasha.currentAntar?.lord) === 7 ||
+    (planets[dasha.current?.lord]?.aspects||[]).includes(7) ||
+    (dasha.current?.lord === l7) || (dasha.currentAntar?.lord === l7);
+  const houseLordDesc = houseLordActive ? `7th lord or H7 activated by current Dasha` : null;
+ 
+  // Divisional: D9 supports
+  const divDesc = d9VenusGood ? 'D9 Venus supports marriage karma' : null;
+ 
+  return getTriggerStack('Marriage', {
+    natal, dasha: dashaDesc, transit: transitDesc, houseLord: houseLordDesc, divisional: divDesc
+  });
+}
+ 
+// ── 4. Affliction Severity Engine ──
+function getAfflictionSeverityDetailed(planet, planets, lagnaIdx, yogas) {
+  if (!planets[planet]) return null;
+  const p = planets[planet];
+  const H = name => planets[name]?.house || 0;
+  const afflictions = [];
+  let severityScore = 0;
+ 
+  // Sign affliction
+  if (p.status.includes('Debilitated')) { severityScore += 30; afflictions.push('Debilitated in sign'); }
+  if (p.status.includes('Enemy')) { severityScore += 15; afflictions.push('Enemy sign'); }
+ 
+  // Combustion
+  if (p.combust) { severityScore += 25; afflictions.push('Combust (within Sun orb)'); }
+ 
+  // Malefic aspects (with orb check)
+  const satAspects = (planets.Saturn?.aspects||[]).includes(p.house);
+  const marsAspects = (planets.Mars?.aspects||[]).includes(p.house);
+  const rahuConj = Math.abs((planets.Rahu?.sid||0) - p.sid) < 10;
+  if (satAspects) { severityScore += 20; afflictions.push('Saturn aspects'); }
+  if (marsAspects) { severityScore += 15; afflictions.push('Mars aspects'); }
+  if (rahuConj)  { severityScore += 20; afflictions.push('Rahu conjunct'); }
+ 
+  // Dusthana house
+  if ([6,8,12].includes(p.house)) { severityScore += 10; afflictions.push(`In H${p.house} (dusthana)`); }
+ 
+  // Protections (reduce severity)
+  const beneficAspects = (planets.Jupiter?.aspects||[]).includes(p.house) || (planets.Venus?.aspects||[]).includes(p.house);
+  const isVargottama = p.rasiIdx === p.navamsaRasiIdx;
+  const hasNeechaBhanga = yogas.some(y => y.planet === planet && y.name.includes('Neecha Bhanga'));
+ 
+  if (beneficAspects) { severityScore -= 15; }
+  if (isVargottama)   { severityScore -= 20; }
+  if (hasNeechaBhanga){ severityScore -= 25; }
+  if (p.retrograde)   { severityScore -= 10; }
+ 
+  severityScore = Math.max(0, Math.min(100, severityScore));
+  const level = severityScore >= 70 ? 'SEVERE' : severityScore >= 50 ? 'STRONG' :
+    severityScore >= 30 ? 'MODERATE' : 'MILD';
+ 
+  const protections = [];
+  if (beneficAspects) protections.push('Jupiter/Venus aspect softens');
+  if (isVargottama)   protections.push('Vargottama — D9 support strong');
+  if (hasNeechaBhanga)protections.push('Neecha Bhanga active');
+  if (p.retrograde)   protections.push('Retrograde adds internalized strength');
+ 
+  return {
+    planet, severityScore, level, afflictions, protections,
+    summary: `${planet} affliction: ${level} (${severityScore}/100) | Afflictions: ${afflictions.join(', ') || 'none'} | Protected by: ${protections.join(', ') || 'none'}`
+  };
+}
+ 
+// ── 2. Rectification Warning ──
+function getRectificationWarning(lagna, planets) {
+  const warnings = [];
+  const lagnaDegs = lagna.degInRasi;
+  const moonDegs  = planets.Moon?.degInRasi || 15;
+  const nakDeg    = (planets.Moon?.sid || 0) % (360/27);
+  const nakSize   = 360/27;
+ 
+  if (lagnaDegs < 2 || lagnaDegs > 28)
+    warnings.push(`Lagna at ${lagnaDegs.toFixed(1)}° — within 2° of sign boundary. A 15-minute birth time error could change Lagna to ${lagnaDegs < 2 ? 'previous sign' : 'next sign'}.`);
+ 
+  if (nakDeg < 1 || nakDeg > (nakSize - 1))
+    warnings.push(`Moon near Nakshatra boundary — Vimshottari Dasha starting lord may change with ±15 min birth time correction.`);
+ 
+  // Check navamsa sensitivity (planet near 3.2° navamsa division)
+  const navamsaDiv = 3.333;
+  for (const [name, p] of Object.entries(planets)) {
+    if (['Rahu','Ketu'].includes(name)) continue;
+    const posInNavamsa = p.degInRasi % navamsaDiv;
+    if (posInNavamsa < 0.2 || posInNavamsa > (navamsaDiv - 0.2))
+      warnings.push(`${name} near Navamsa boundary (${p.degInRasi.toFixed(2)}° in ${p.rasi}) — D9 position may shift with small birth time correction.`);
+  }
+ 
+  const risk = warnings.length >= 3 ? 'HIGH' : warnings.length >= 1 ? 'MODERATE' : 'LOW';
+  return {
+    risk, warnings,
+    summary: warnings.length
+      ? `BIRTH TIME SENSITIVITY: ${risk} | ${warnings.join(' | ')}`
+      : 'Birth time appears stable — Lagna and Moon well within boundaries'
+  };
+}
+ 
+// ── 5. Domain Protector Engine ──
+function getDomainProtector(planets, lagnaIdx, yogas, domain) {
+  const H = name => planets[name]?.house || 0;
+  const protectors = [];
+ 
+  // Jupiter protection
+  const jupH = H('Jupiter');
+  const jupSt = planets.Jupiter?.status || '';
+  if (jupSt.includes('Exalted') || jupSt.includes('Own') || [1,4,5,7,9,10].includes(jupH))
+    protectors.push(`Jupiter in H${jupH} (${jupSt.split(' ')[0]}) — grace, expansion, protection`);
+ 
+  // Lagna lord protection
+  const lagnaLord = RASI_LORD[lagnaIdx];
+  if (![6,8,12].includes(H(lagnaLord)) && !planets[lagnaLord]?.combust)
+    protectors.push(`Lagna lord ${lagnaLord} in H${H(lagnaLord)} — self is protected, vitality maintained`);
+ 
+  // D9 support
+  const d9VenusSt = ''; // would need navamsa passed in
+  // Vipareeta Raja
+  if (yogas.some(y => y.name.includes('Vipareeta')))
+    protectors.push('Vipareeta Raja Yoga — chart rises from adversity, difficulties become fuel');
+ 
+  // Pushkara planet
+  // Vargottama
+  const vargottamaPlanets = Object.entries(planets).filter(([,p]) => p.rasiIdx === p.navamsaRasiIdx).map(([n]) => n);
+  if (vargottamaPlanets.length > 0)
+    protectors.push(`${vargottamaPlanets.join(', ')} Vargottama — full strength in D9, long-term outcomes better than short-term appears`);
+ 
+  // Domain-specific
+  if (domain === 'marriage') {
+    if (yogas.some(y => y.name.includes('Hamsa'))) protectors.push('Hamsa Yoga (Jupiter Kendra) — blessed marriage karma');
+    const l7 = RASI_LORD[(lagnaIdx+6)%12];
+    if (planets[l7]?.status.includes('Exalted') || planets[l7]?.status.includes('Own'))
+      protectors.push(`7th lord ${l7} strong — marriage itself is protected`);
+  }
+  if (domain === 'career') {
+    if (yogas.some(y => y.name.includes('Ruchaka'))) protectors.push('Ruchaka Yoga — career excellence, leadership protected');
+    if (yogas.some(y => y.name.includes('Dharma-Karma'))) protectors.push('Dharma-Karma Yoga — career aligned with purpose');
+  }
+  if (domain === 'wealth') {
+    if (yogas.some(y => y.name.includes('Lakshmi'))) protectors.push('Lakshmi Yoga — wealth karma exceptionally protected');
+    if (yogas.some(y => y.name.includes('Gajakesari'))) protectors.push('Gajakesari Yoga — financial grace, Jupiter-Moon alignment');
+  }
+ 
+  return {
+    domain, protectors,
+    strongest: protectors[0] || 'No major protector active — requires self-effort',
+    summary: protectors.length
+      ? `${domain} PROTECTORS: ${protectors.join(' | ')}`
+      : `${domain}: limited natural protection — conscious effort required`
+  };
+}
+ 
+// ── 6. Destiny vs Free Will Classification ──
+function getKarmaClassification(planets, lagnaIdx, yogas, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const classifications = {
+    fixed: [],
+    flexible: [],
+    avoidable: [],
+    earned: []
+  };
+ 
+  // Fixed karma — very strong yogas, 5+ indicators, AK in fixed patterns
+  const ak = karakas?.Atmakaraka;
+  if (yogas.some(y => y.name.includes('Pancha Mahapurusha') || y.name.includes('Hamsa') || y.name.includes('Ruchaka') || y.name.includes('Malavya')))
+    classifications.fixed.push('Career/life direction strongly fixed by Pancha Mahapurusha yoga — this person is built for a specific calling');
+ 
+  if (planets[ak]?.status.includes('Exalted'))
+    classifications.fixed.push(`Soul-level mission (Atmakaraka ${ak} exalted) — life purpose is clearly defined and likely to manifest`);
+ 
+  // Flexible karma — moderate indicators, dasha-dependent
+  const l7 = RASI_LORD[(lagnaIdx+6)%12];
+  const marriageScore = yogas.filter(y => y.planet === 'Venus' || y.planet === l7).length;
+  if (marriageScore >= 2 && marriageScore <= 4)
+    classifications.flexible.push(`Marriage timing is flexible — chart shows potential but exact timing depends on choices and dasha activation`);
+ 
+  if (H('Jupiter') !== 7 && ![6,8,12].includes(H(l7)))
+    classifications.flexible.push('Wealth accumulation is flexible — foundation exists but requires disciplined action');
+ 
+  // Avoidable karma — afflictions that have cancellation routes
+  const mangalActive = yogas.some(y => y.name.includes('Mangal Dosha — ACTIVE'));
+  if (mangalActive)
+    classifications.avoidable.push('Mangal Dosha effects can be reduced through pariharams and aware partner selection');
+ 
+  if (yogas.some(y => y.name.includes('Pitru Dosha')))
+    classifications.avoidable.push('Ancestral karma (Pitru Dosha) — can be cleared through specific tarpan and ancestor rituals');
+ 
+  // Earned karma — requires effort, strong indicators but Saturn/Ketu gated
+  if (planets.Saturn?.bala >= 60)
+    classifications.earned.push('Career authority and wealth (Saturn strong) — comes only through sustained discipline and patience, not luck');
+ 
+  if (H('Ketu') === 10 || H('Ketu') === 1)
+    classifications.earned.push('Success requires overcoming self-sabotage tendencies (Ketu in success house) — must be consciously earned');
+ 
+  return {
+    classifications,
+    summary: [
+      classifications.fixed.length ? `FIXED KARMA: ${classifications.fixed.join(' | ')}` : '',
+      classifications.flexible.length ? `FLEXIBLE KARMA: ${classifications.flexible.join(' | ')}` : '',
+      classifications.avoidable.length ? `AVOIDABLE KARMA: ${classifications.avoidable.join(' | ')}` : '',
+      classifications.earned.length ? `EARNED KARMA: ${classifications.earned.join(' | ')}` : '',
+    ].filter(Boolean).join('\n')
+  };
+}
+ 
+module.exports.getCertaintyScore = getCertaintyScore;
+module.exports.getTriggerStack = getTriggerStack;
+module.exports.getMarriageTriggerStack = getMarriageTriggerStack;
+module.exports.getAfflictionSeverityDetailed = getAfflictionSeverityDetailed;
+module.exports.getRectificationWarning = getRectificationWarning;
+module.exports.getDomainProtector = getDomainProtector;
+module.exports.getKarmaClassification = getKarmaClassification;
