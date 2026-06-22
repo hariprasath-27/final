@@ -1,3 +1,4 @@
+
 'use strict';
 const Anthropic = require('@anthropic-ai/sdk');
 const { buildFullChart } = require('./ephemeris');
@@ -48,7 +49,7 @@ SUPPRESSION LIST — never infer automatically:
 × Venus affliction alone → family rejection
 × Single malefic in dusthana → definite failure
  
-OUTPUT: Facts only. No poetry. Short paragraphs 3-5 sentences. No bullet points. Speak as "you". === SECTION === and --- Sub Heading --- headers. Complete every sentence.
+OUTPUT: Facts only. No poetry. 2-4 sentences per sub-topic. No bullet points. Speak as "you". === SECTION === and --- Sub Heading --- headers. Always complete your current sentence before stopping. Prioritize most important content first so nothing critical is cut.
  
 CERTAINTY ENGINE (mandatory for every major prediction):
 After each major claim, show the evidence stack in this format:
@@ -236,6 +237,8 @@ module.exports = async function handler(req, res) {
  
       // CALL 0 — Priority Engine + Self
       call(`Write ONLY these two sections from the reading structure. Apply ALL suppression rules.
+PRIORITY RULE: Most important sub-topics first. 2-4 sentences per sub-topic. If space runs short, complete the current sentence cleanly.
+CONCISENESS: No long explanations. State fact → reason → implication. Move on.
  
 === ACTIVE KARMA PRIORITY (Run this engine first) ===
 State the 3 strongest active karmas RIGHT NOW based on current Dasha lord, Antardasha lord, and active transit triggers from the MASTER FACT SHEET. For each: state the planet, its house position, its condition, and what it is activating in real-world terms right now. Format: "1. [Planet] as [Mahadasha/Antardasha lord] activates [house] — [real-world meaning]." This is the lens for the entire reading.
@@ -246,7 +249,7 @@ Mind structure: how this person thinks, decides, processes emotion — Moon naks
 Natural temperament and aura — Nakshatra gana, element, pada psychology.
 Core strengths — which planets give actual gifts and how in daily life (use PLANET DOMINANCE ranking).
 Core weaknesses — which planets create recurring struggle and how.
-Gift AND shadow for the 2 most dominant planets (state both sides, never one only).`, 1200),
+Gift AND shadow for the 2 most dominant planets (state both sides, never one only).`, 3000),
  
       // CALL 1 — Family + Love
       call(`Write ONLY these two sections. Apply ALL suppression rules. Minimum 2 indicators before any family statement.
@@ -265,66 +268,86 @@ Romantic wounds: only if 3+ indicators. What they are and how they show in relat
 Sexual energy pattern: Mars-Venus connection, 8th house.
 Karmic partner indicators: DK, Rahu-Venus, unfinished karma section.
 Secret relationship risk: only if 2+ indicators. State each.
-Relationship phase engine: based on current Dasha — which phase (attraction/commitment/stability/adjustment) is most active now?`, 1000),
+Relationship phase engine: based on current Dasha — which phase (attraction/commitment/stability/adjustment) is most active now?`, 3000),
  
       // CALL 2 — Marriage (full engine)
       call(`Write ONLY this section. Apply ALL suppression rules. Analyze marriage in exact order.
+PRIORITY RULE: Most critical sub-topics first: timing windows, stability score, partner nature, conflict pattern. 2-4 sentences each. Complete sentences only.
+CONCISENESS: Use the REFINED MARRIAGE and MARRIAGE STABILITY SCORES from the chart directly — do not re-analyze, just interpret and translate to real life.
  
 === MARRIAGE ===
-Go through each factor in order: H7 → H7 lord → Venus → Upapada → UL lord → D9 7th → D9 7th lord → Darakaraka → A7 → current dasha → transit. For each: state its condition (strong/weak/neutral/afflicted) and what it means in real terms.
  
-Marriage type (Love/Arranged/Hybrid — needs 2+ indicators each type).
-Partner nature: translate DK, 7th lord, D9 7th lord into real personality (not symbols — real traits, real temperament).
-Partner profession: use Darakaraka sign, D9 7th lord, A7.
-Partner appearance: 7th lord sign, D9 7th, DK nature.
-Timing: primary window + secondary + backup. State period, dates, strength score from REFINED MARRIAGE section.
-Stability score: state from MARRIAGE STABILITY SCORES directly.
-Conflict pattern: Mars/Saturn/Rahu influence on H7 — translate to real daily behavior.
-Divorce risk: only if 3+ indicators present. State count and each indicator.
-Second marriage risk: only if 3+ indicators.
-Blended marriage score: state D1+D9+UL score from WEIGHTED SCORES explicitly.`, 1200),
+--- Marriage Engine Score ---
+State the blended D1+D9+UL score from WEIGHTED SCORES. State marriage trigger stack count (from MARRIAGE TRIGGER STACK). 2 sentences.
+ 
+--- Marriage Type ---
+Love / Arranged / Hybrid — state which indicators confirm this (2+ required). 2 sentences.
+ 
+--- Partner Nature ---
+Translate Darakaraka, 7th lord sign, D9 7th lord into real personality traits and real temperament. Not symbols. 3 sentences.
+ 
+--- Partner Background & Profession ---
+Use A7, D9 7th lord, Darakaraka sign to indicate career field and family background. 2 sentences.
+ 
+--- Marriage Timing ---
+State the top 2 windows from REFINED MARRIAGE TRIGGER section with dates and strength. Primary + backup. 3 sentences.
+ 
+--- Stability & Conflict ---
+State emotional%, stability%, conflict risk% from MARRIAGE STABILITY SCORES directly. Translate conflict pattern to real daily behavior (not symbolic). 3 sentences.
+ 
+--- Risks ---
+Divorce risk (only if 3+ indicators — state count). Second marriage risk (only if 3+ indicators). If below threshold: say so explicitly. 2 sentences.`, 3000),
  
       // CALL 3 — Career + Money
       call(`Write ONLY these two sections. Apply ALL suppression rules.
+PRIORITY RULE: Career fields first, then peak period, then money pattern, then peak windows. 2-4 sentences per sub-topic. Complete sentences only.
  
 === CAREER ===
-Best 3-5 career fields based on D10, H10 lord, Sun, Mercury, Saturn, Amatyakaraka. State real professions, not symbols.
-Work style: leadership or service, independent or team, creative or analytical — which indicators confirm this.
-Business potential: H7, Mercury, Jupiter, 11th lord analysis.
-Career shift periods: when Saturn transits H10, Rahu Dasha, major Mahadasha changes — give years.
-Promotion/breakthrough timing: current Antardasha, Jupiter transit H10/H6.
-Peak career period: which Mahadasha brings highest achievement and exactly why.
-Event chain: connect career shifts to other life events (career peak → wealth increase → marriage timing or vice versa).
+ 
+--- Best Career Fields ---
+State 3-5 real professions based on D10, H10 lord, Sun, Mercury, Amatyakaraka. Real jobs, not symbols. 2 sentences.
+ 
+--- Work Style ---
+Leadership or service? Independent or team? Creative or analytical? State which indicators confirm. 2 sentences.
+ 
+--- Peak Career Period ---
+Which Mahadasha/Antardasha brings highest achievement and why. Give years. 2 sentences.
+ 
+--- Career Event Chain ---
+Connect: career development → wealth → what it enables next. 2 sentences.
  
 === MONEY ===
-Wealth pattern: does money come through salary, business, inheritance, spouse, or sudden gains? Which indicators show this.
-Savings vs expenditure tendency: H2 vs H12, Saturn vs Jupiter influence.
-Debt risk: H6, H6 lord condition.
-Property timing: H4, Mars, Moon — dasha windows for property.
-Inheritance signal: H8, H8 lord, 9th lord.
-Peak wealth windows: top 3 from WEALTH TIMING ENGINE section (state period + dates + strength).
-Loss periods: when to be cautious.
-Blended wealth score from WEIGHTED SCORES.`, 1100),
+ 
+--- Wealth Pattern ---
+How does money come — salary, business, inheritance, spouse, sudden gains? State from H2/H11/Jupiter/Dhana yoga analysis. 2 sentences.
+ 
+--- Peak Wealth Windows ---
+Top 2 from WEALTH TIMING ENGINE with period, dates, strength. 2 sentences.
+ 
+--- Wealth Score & Risks ---
+State wealth score from WEIGHTED SCORES. Debt risk (H6). Property window. Loss period to watch. 3 sentences.`, 3000),
  
       // CALL 4 — Health + Children
       call(`Write ONLY these two sections. Apply ALL suppression rules.
  
 === HEALTH ===
-Vulnerable body parts: state from HEALTH ENGINE section directly.
-Top 2 chronic risk areas: H6, H8, H12 analysis — 2+ indicators required for each.
-Mental health patterns: Moon, Mercury, H4 — 2+ required. Translate to real symptoms not symbols.
-Accident risk: Mars, 8th house — 2+ required.
-Surgery indicators: only if 3+ indicators (Mars H6/H8, 8th lord active, Saturn transit H1/H8).
-Danger periods: from HEALTH ENGINE section — state the specific Dashas.
-Recovery strength: from RECOVERY INDICATORS section — state directly.
-Gift and shadow of the health chart (e.g., strong Mars = physical power but accident tendency).
+ 
+--- Vulnerable Areas ---
+State vulnerable body parts from HEALTH ENGINE directly. Top 2 chronic risk areas (2+ indicators each). 3 sentences.
+ 
+--- Mental Health ---
+Moon, Mercury, H4 patterns — only if 2+ indicators. Translate to real tendencies. 2 sentences.
+ 
+--- Danger Periods ---
+State the specific Dasha danger periods from HEALTH ENGINE. Recovery strength from RECOVERY INDICATORS. 2 sentences.
  
 === CHILDREN ===
-Use H5, H5 lord, Jupiter, D7, Putrakaraka, current dasha — all 5 required before strong prediction.
-Fertility and timing: Jupiter transit over H5, Jupiter Bhukti window.
-Bond quality with children: Moon-H5 connection, Jupiter condition.
-Concerns: only if 2+ indicators confirm. Ketu H5 alone is not enough — state clearly what confirms concern.
-Child karma from UNFINISHED KARMA section if relevant.`, 1000),
+ 
+--- Children Prediction ---
+State how many of the 5 required indicators are confirmed (H5, H5 lord, Jupiter, D7, Putrakaraka, dasha). Only predict based on confirmed count. 2 sentences.
+ 
+--- Timing & Concerns ---
+Best conception window from CHILDREN TIMING section. Any concerns — only if 2+ indicators confirm (state each). 2 sentences.`, 3000),
  
       // CALL 5 — Foreign + Spiritual
       call(`Write ONLY these two sections. Apply ALL suppression rules.
@@ -343,40 +366,44 @@ Unfinished karma: from UNFINISHED KARMA section — state directly.
 Occult/intuitive ability: H8, H12, Ketu, 4th house — 2+ required.
 Spiritual growth period: Ketu Dasha, 12th lord active, Jupiter-Ketu connection — when in life.
 Ancestral karma: Pitru Dosha status from YOGAS section — ACTIVE or NULLIFIED.
-Core life lesson: Atmakaraka planet — what this soul came to master in real-world terms.`, 1000),
+Core life lesson: Atmakaraka planet — what this soul came to master in real-world terms.`, 3000),
  
       // CALL 6 — Life Timeline
-      call(`Write ONLY this section. Apply ALL suppression rules. Use LIFE STAGE CONTEXT from master fact sheet.
+      call(`Write ONLY this section. Apply ALL suppression rules. Use LIFE STAGE CONTEXT.
+PRIORITY RULE: Current phase first, then next 2 phases, then full timeline. 2-3 sentences per life phase. State dominant karma + main event type + growth theme for each. Complete sentences only. from master fact sheet.
  
 === LIFE TIMELINE ===
-For each phase state: dominant karma active, major event type most likely, growth theme, pain theme.
-Childhood (0-12): family karma, education, emotional patterns set.
-Teen (13-18): education direction, social patterns, family dynamics.
-Early adult (19-24): education completion, first career steps, first love.
-Young adult (25-30): career establishment, marriage window, wealth beginning.
-Saturn maturation (31-36): career authority solidifies, family stability, property.
-Rahu peak (37-45): peak ambition, major life decisions, foreign possibility.
-Ketu phase (46-60): wisdom period, spiritual turning, legacy building.
-Old age (60+): health patterns, family support quality, final life chapter.
+--- Current Phase (Most Important — Write This First) ---
+Which Dasha is running now. What chain of events it is triggering right now. Next 2 events in the chain. Best and worst upcoming months from TRANSIT HEATMAP. 4 sentences.
  
-Current phase NOW: state which Dasha is running, what chain of events it is currently triggering, and what the next 2 events in the chain are likely to be.
- 
-TRANSIT HEATMAP: state the best and worst months from TRANSIT HEATMAP section directly.`, 1000),
+--- Life Phases ---
+For each phase: 1-2 sentences maximum. Dominant karma + main event type + growth/pain theme.
+Childhood (0-12): [write it]
+Teen (13-18): [write it]
+Early adult (19-24): [write it]
+Young adult (25-30): [write it]
+Saturn maturation (31-36): [write it]
+Rahu peak (37-45): [write it]
+Ketu phase (46-60): [write it]
+Old age (60+): [write it]`, 3000),
  
       // CALL 7 — Doshas & Pariharams
       call(`Write ONLY this section. Be extremely specific. No generic remedies.
  
 === DOSHAS & PARIHARAMS ===
-Go through EVERY dosha in YOGAS & DOSHAS section. For EACH:
-If NULLIFIED — state exactly which rule cancels it and what that means for this person's life.
-If ACTIVE — give:
-  Temple: specific temple name in Tamil Nadu or Kerala + presiding deity
-  Day: specific day of week
-  Mantra: exact mantra text + exact number of repetitions
-  Gemstone: which stone, which finger, which metal, minimum weight in carats
-  Color: specific color to wear on which day
-  Food donation: specific food item to whom on which day
-No generic advice. Every remedy must be tied to the specific dosha and the specific planet.`, 1000),
+Go through every dosha from the YOGAS & DOSHAS section in the chart data.
+ 
+For each dosha write exactly:
+DOSHA NAME: [name]
+Status: ACTIVE or NULLIFIED
+If NULLIFIED: Which specific rule cancels it + what this means practically.
+If ACTIVE:
+Temple: [specific temple, Tamil Nadu or Kerala] | Deity: [name]
+Day: [day] | Mantra: [exact text] × [number] repetitions
+Gemstone: [stone] in [metal] on [finger] minimum [weight]ct
+Color: [color] on [day] | Donate: [food] to [recipient] on [day]
+ 
+Do not skip any dosha. Do not give generic remedies. Each remedy is specific to that planet's weakness.`, 3000),
  
       // CALL 8 — Peak Windows + Life-Defining Karmas
       call(`Write ONLY these two sections. Be specific with dates and scores.
@@ -391,7 +418,7 @@ Top 3 health-risk periods to watch: from HEALTH ENGINE danger periods.
 At the end of the reading, state the 3 strongest repeating patterns across this person's entire life. These are the core story of the chart.
 Format for each:
 "[Pattern name]: [what this pattern means in real life] — [how it shows across career/relationships/health/family] — [how to consciously work with it rather than be controlled by it]"
-These are not predictions. They are the soul's curriculum.`, 1000),
+These are not predictions. They are the soul's curriculum.`, 3000),
  
     ]);
  
