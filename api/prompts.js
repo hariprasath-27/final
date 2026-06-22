@@ -1,3 +1,4 @@
+
  
 'use strict';
  
@@ -134,6 +135,16 @@ function buildReadingPrompt(chart, person, question) {
     ? `Best month: ${chart.transitHeatmap.best} | Worst: ${chart.transitHeatmap.worst} | Scores: ${chart.transitHeatmap.summary}`
     : '';
   const dusthanaStr = chart.dusthanaTransformations?.summary || '';
+ 
+  // Batch 7 — Certainty & Precision
+  const rectificationStr = chart.rectificationWarning?.summary || '';
+  const marriageStackStr = chart.marriageTriggerStack?.summary || '';
+  const venusAffDetailStr = chart.venusAfflictionDetailed?.summary || '';
+  const saturnAffDetailStr = chart.saturnAfflictionDetailed?.summary || '';
+  const marriageProtStr = chart.marriageProtector?.summary || '';
+  const careerProtStr = chart.careerProtector?.summary || '';
+  const wealthProtStr = chart.wealthProtector?.summary || '';
+  const karmaClassStr = chart.karmaClassification?.summary || '';
   const transitTriggersStr = chart.transitTriggers
     ? [
         chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
@@ -320,8 +331,24 @@ ${recoveryStr}
 DUSTHANA TRANSFORMATIONS (6/8/12 are not always bad):
 ${dusthanaStr}
  
-BIRTH TIME CONFIDENCE:
+BIRTH TIME CONFIDENCE & RECTIFICATION WARNING:
 ${birthConfStr}
+${rectificationStr}
+ 
+MARRIAGE TRIGGER STACK (event certainty):
+${marriageStackStr}
+ 
+AFFLICTION SEVERITY:
+Venus: ${venusAffDetailStr}
+Saturn: ${saturnAffDetailStr}
+ 
+DOMAIN PROTECTORS:
+${marriageProtStr}
+${careerProtStr}
+${wealthProtStr}
+ 
+KARMA CLASSIFICATION (Fixed / Flexible / Avoidable / Earned):
+${karmaClassStr}
  
 PSYCHOLOGICAL PROFILE:
 ${psychStr}
@@ -430,40 +457,152 @@ VERIFIED PSYCHOLOGICAL PATTERNS: Use only the confirmed patterns from VERIFIED P
  
 FACTS NOT POETRY: State what, when, and the brief astrological reason. No long explanations. No generic statements.
  
-Now give the reading structured with these headers:
+PRIORITY ENGINE — DO THIS FIRST BEFORE WRITING ANYTHING:
+Rank the top 3 strongest active karmas right now:
+  1. Current Dasha lord (strength + house + natal promise)
+  2. Current Antardasha lord (strength + house activation)
+  3. Strongest transit trigger active now
+Only speak primarily from these top active karmas. Do not give equal weight to inactive placements.
  
-=== CHARACTER & PERSONALITY ===
-(Based on Lagna lord position, Rasi, Nakshatra nature — describe their appearance, personality, strengths, weaknesses, thinking style, emotional nature. Be very specific.)
+DO NOT INTERPRET THE WHOLE CHART. INTERPRET THE MOST ACTIVE CHART. STATE FACTS. NO REASONING FILLER.
  
-=== WHAT HAS HAPPENED IN LIFE (Past) ===
-(Read each past Dasha period. What happened during each — childhood, education, family events, turning points. Connect planet significations to life events with years/ages.)
+EVENT CHAIN RULE: Connect events as chains. Job loss → relocation → marriage → wealth. Weak career → foreign move → partner meeting → marriage. Do not isolate events.
  
-=== CURRENT PERIOD — ${d.current?.lord} DASHA, ${d.currentAntar ? d.current?.lord+'-'+d.currentAntar.lord+' BHUKTI' : ''} ===
-(What is happening RIGHT NOW in their life — career, relationships, health, mindset, challenges, opportunities. Very specific to current Dasha lord's house position and nature.)
+REAL-LIFE TRANSLATOR RULE: Convert astrology into real behavior. Saturn H7 ≠ "delay" — it means: late commitment, older/serious partner, duty-based marriage, slow bonding. Always translate symbol into lived reality.
  
-=== CAREER & EDUCATION ===
-(10th house, 10th lord, planets in 10th, Sun position, Mercury, Saturn — what career suits them? When does career peak? Key career years based on Dashas.)
+SHADOW vs GIFT RULE: For every strong placement show both. Strong Mars: gift=drive and courage, shadow=aggression and impatience. Strong Saturn: gift=discipline, shadow=emotional coldness. Never show only one side.
  
-=== WEALTH & FINANCES ===
-(2nd house, 11th house, their lords, Jupiter's role — financial prospects, when wealth comes, any financial challenges.)
+MANIFESTATION LEVEL: Score each major prediction 0-100. 0-30=dormant, 31-50=weak, 51-70=moderate, 71-85=strong, 86-100=dominant.
  
-=== MARRIAGE & RELATIONSHIPS ===
-(7th house: ${chart.houses[7]?.join(', ')||'Empty'}, 7th lord: ${p[chart.rasi.lord]?.house}, Venus position — when is marriage likely? What kind of partner? Love or arranged? Mangal Dosha present? Any delays?)
+Now give the reading:
+ 
+=== ACTIVE KARMA PRIORITY (Run this engine first) ===
+State the 3 strongest active karmas right now based on Dasha lord + Antardasha lord + transit.
+Format: "1. [Planet] as [role] activates [house/signification] — [real-world meaning now]"
+This is the lens for the entire reading. Everything else is secondary.
+ 
+=== SELF ===
+Physical appearance (Lagna, Lagna lord, Moon — specific, not generic).
+Body constitution and health baseline (Lagna sign, Lagna lord condition).
+Mind structure: how this person thinks, decides, processes emotion (Moon, Mercury, Nakshatra).
+Natural temperament and aura (Nakshatra gana, element, pada).
+Core strengths — which planets give actual gifts and how they show in daily life.
+Core weaknesses — which planets create recurring struggle and exactly how.
+Gift and shadow for the 2 dominant planets.
+ 
+=== FAMILY ===
+Mother (H4, H4 lord, Moon — minimum 2 indicators before stating anything).
+Father (H9, H9 lord, Sun — minimum 2 indicators).
+Siblings (H3, H3 lord, Mars).
+Home karma — what was the emotional environment growing up (H4 condition).
+Family financial background (H2, H2 lord).
+Inheritance potential (H8, H8 lord, H4 link).
+Only state family patterns with 2+ indicators. Never from a single house alone.
+ 
+=== LOVE & RELATIONSHIPS ===
+Love nature and attachment style (Venus, Moon, 5th house).
+Romantic wounds — only if 3+ indicators confirm (Moon, Venus, Rahu/Ketu involvement, 8th house).
+Sexual energy and physical attraction patterns (Mars, Venus, 8th house).
+Karmic partner indicators (DK, Rahu-Venus, 8th lord).
+Secret relationship risk — only if 2+ indicators (Venus H8/H12, Rahu-Venus, 5th-8th link).
+Relationship phase engine: when is attraction phase, when is commitment, when is stability.
+ 
+=== MARRIAGE ===
+Analyze in exact order: H7 → H7 lord → Venus → Upapada → UL lord → D9 H7 → D9 H7 lord → DK → A7 → dasha → transit.
+State for each: strong, weak, neutral, afflicted.
+Type: Love / Arranged / Hybrid (2+ indicators required for each).
+Partner nature (H7 sign, 7th lord sign, Darakaraka nature — real-world translation).
+Partner profession (Darakaraka, D9 7th lord, A7).
+Partner appearance (7th lord sign, D9 7th sign).
+Timing: primary window + secondary + backup. Never binary.
+Stability score from MARRIAGE STABILITY SCORES section.
+Conflict pattern (Mars/Saturn in H7, Venus affliction — translate to real behavior).
+Divorce risk: only if 3+ indicators. State each indicator.
+Second marriage risk: only if 3+ indicators.
+Use blended D1+D9+UL score from WEIGHTED SCORES — state it explicitly.
  
 === CHILDREN ===
-(5th house: ${chart.houses[5]?.join(', ')||'Empty'}, Jupiter, 5th lord — prospects for children, timing, any concerns.)
+Use H5, H5 lord, Jupiter, D7, Putrakaraka, dasha. All 5 required before stating strong prediction.
+Fertility and timing (Jupiter transit over H5, Jupiter Bhukti, D7 Jupiter).
+Child karma — bond quality, nature of children.
+Concerns — only if 2+ indicators. Ketu H5 alone is NOT enough.
+ 
+=== CAREER ===
+Best 3-5 career fields (D10, H10 lord, Sun, Mercury, Saturn, Amatyakaraka — real professions not symbols).
+Work style: leadership or service, independent or team, creative or analytical.
+Business potential (H7, Mercury, Jupiter, 11th lord).
+Career shift periods (Saturn transit H10, Rahu dasha, major Mahadasha change).
+Promotion timing (Jupiter transit H10/H6, current Antardasha).
+Peak career period — which Dasha brings highest achievement and why.
+ 
+=== MONEY ===
+Wealth pattern: does money come through career, business, inheritance, spouse, or sudden gains.
+Use: H2, H11, their lords, Jupiter, Dhana yogas, current dasha — all required.
+Savings vs expenditure tendency (H2 vs H12, Saturn vs Jupiter).
+Debt risk (H6, H6 lord).
+Property (H4, Mars, Moon — timing from dasha).
+Inheritance (H8, H8 lord, 9th lord).
+Peak money windows: top 3 from WEALTH TIMING ENGINE section.
+Loss periods: when H12 lord activates, Ketu Bhukti, 8th lord period.
  
 === HEALTH ===
-(1st house, 6th house, 8th house, their lords — constitution, disease tendencies, which body parts to watch, which periods need health care.)
+Vulnerable body parts from Lagna sign (state from HEALTH ENGINE section).
+2 highest chronic risk areas (from H6, H8, H12 analysis — 2+ indicators each).
+Mental health patterns (Moon, Mercury, 4th house — 2+ required).
+Accident risk (Mars, 8th house — 2+ required).
+Surgery indicators (Mars H6/H8, 8th lord active, Saturn transit H1/H8 — 3+ required).
+Danger periods from HEALTH ENGINE danger periods section.
+Recovery strength from RECOVERY INDICATORS section.
  
-=== NEXT 5 YEARS — YEAR BY YEAR (${new Date().getFullYear()} to ${new Date().getFullYear()+5}) ===
-(Go year by year. For each year state: which Antardasha is running, what it means for career/money/relationships/health. Be specific and practical.)
+=== FOREIGN & TRAVEL ===
+Use FOREIGN SETTLEMENT section — state score and level directly.
+Need 4+ signals. State exactly how many present.
+Foreign career potential (Mercury H12, Rahu, 9th-12th link).
+Migration timing (Rahu Dasha, 12th lord active, Jupiter transit H9/H12).
+Foreign spouse: only if H12+9th lord+UL+D9 all align (4+ indicators).
  
-=== SPECIAL STRENGTHS OF THIS CHART ===
-(What makes this chart exceptional — which yogas, which placements give special gifts or protection.)
+=== SPIRITUAL & KARMA ===
+Past life indicators (Ketu house, AK house, Rahu-Ketu axis, D60 if available).
+Unfinished karma from UNFINISHED KARMA section — state directly.
+Occult ability (H8, H12, Ketu, Neptune-type placements).
+Spiritual growth period (Ketu Dasha, 12th lord active, Jupiter-Ketu connection).
+Ancestral karma (Pitru Dosha, Sun-Rahu, 9th house affliction).
+Core life lesson (Atmakaraka sign and house — what this soul came to master).
  
-=== DOSHAS & PARIHARAMS (Remedies) ===
-(Go through every Dosha listed in YOGAS & DOSHAS section above. For EACH one state: is it ACTIVE or NULLIFIED? If NULLIFIED — explain exactly why it is cancelled (which rule cancels it) and what that means for this person. If ACTIVE — give the complete remedy: specific temple name in Tamil Nadu or Kerala, presiding deity, day of week, exact mantra with number of repetitions, gemstone with which finger and which metal, colour to wear, food to donate. Be precise and practical.)${question ? '\n\n=== ANSWER TO YOUR QUESTION ===\n(Address the specific question with full astrological reasoning.)' : ''}`;
+=== LIFE TIMELINE ===
+For each phase, state: dominant karma, major event type, growth theme, pain theme.
+Childhood (0-12): family karma, education start, basic personality.
+Teen (13-18): education, first social patterns, family dynamics.
+Early adult (19-24): education completion, first career, love.
+Young adult (25-30): career establishment, marriage window, wealth beginning.
+Saturn maturation (31-36): career authority, family stability, property.
+Rahu peak (37-45): peak ambition, major decisions, foreign possibility.
+Ketu phase (46-60): wisdom, spiritual turning, legacy.
+Old age (60+): health patterns, family support, final life quality.
+Current phase: state which Dasha is active, what chain of events is being triggered now, next 2 events in chain.
+ 
+=== PEAK WINDOWS ===
+Top 3 marriage windows (from REFINED MARRIAGE section — state period + dates + strength score).
+Top 3 wealth windows (from WEALTH TIMING ENGINE).
+Top 3 career windows.
+Top 3 health-risk windows (from HEALTH ENGINE danger periods).
+ 
+=== SPECIAL STRENGTHS ===
+What makes this chart exceptional. Which yogas, placements give rare gifts.
+Manifestation level for top 2 yogas (score from PLANET DOMINANCE).
+ 
+=== DOSHAS & PARIHARAMS ===
+For EVERY dosha in YOGAS & DOSHAS section: ACTIVE or NULLIFIED — state exactly why.
+If NULLIFIED — which specific rule cancels it.
+If ACTIVE — specific temple (Tamil Nadu or Kerala), deity, day, mantra with count, gemstone with finger and metal, color, food donation.
+ 
+=== 3 LIFE-DEFINING KARMAS ===
+At the end, state the 3 strongest repeating patterns across this person's life.
+These are not predictions — they are the core story of this chart.
+Format: "1. [Pattern name]: [what it means in real life] — [how it shows across career/relationships/health] — [how to work with it]"
+This is the deepest part of the reading.
+ 
+${question ? '\n\n=== ANSWER TO YOUR QUESTION ===\n(Address the specific question with full astrological reasoning.)' : ''}`;
 }
  
 function buildMatchPrompt(chart1, chart2, person1, person2, matchResult) {
