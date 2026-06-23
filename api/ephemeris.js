@@ -1,7 +1,6 @@
-
 'use strict';
 const { julian, solar, moonposition } = require('astronomia');
- 
+
 // ── Lahiri Ayanamsha ──
 function getLahiriAyanamsha(jd) {
   const T = (jd - 2451545.0) / 36525;
@@ -11,7 +10,7 @@ function norm360(x) { return ((x % 360) + 360) % 360; }
 function sid(trop, ayan) { return norm360(trop - ayan); }
 function toRad(d) { return d * Math.PI / 180; }
 function toDeg(r) { return r * 180 / Math.PI; }
- 
+
 // ── Tables ──
 const RASI_NAMES  = ['Mesha','Rishabha','Mithuna','Kataka','Simha','Kanya','Tula','Vrischika','Dhanu','Makara','Kumbha','Meena'];
 const RASI_EN     = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
@@ -34,7 +33,7 @@ const PLANET_ENEMIES = {
 };
 // Combustion degrees (planet within this of Sun = combust)
 const COMBUST_ORB = {Moon:12,Mars:17,Mercury:14,Jupiter:11,Venus:10,Saturn:15,Rahu:0,Ketu:0};
- 
+
 const NAK_NAMES = ['Ashwini','Bharani','Krittika','Rohini','Mrigashira','Ardra','Punarvasu','Pushya','Ashlesha',
   'Magha','Purva Phalguni','Uttara Phalguni','Hasta','Chitra','Swati','Vishakha','Anuradha','Jyeshtha',
   'Mula','Purva Ashadha','Uttara Ashadha','Shravana','Dhanishtha','Shatabhisha',
@@ -56,7 +55,7 @@ const NAK_DEITY = ['Ashwini Kumaras','Yama','Agni','Brahma','Soma','Rudra','Adit
   'Pitrus','Bhaga','Aryaman','Savitar','Vishwakarma','Vayu','Indra/Agni','Mitra','Indra',
   'Nirrti','Apah','Vishvedeva','Vishnu','8 Vasus','Varuna','Ajakapada','Ahirbudhnya','Pushan'];
 const DASHA_ORDER = ['Ketu','Venus','Sun','Moon','Mars','Rahu','Jupiter','Saturn','Mercury'];
- 
+
 const HOUSE_SIGNIF = {
   1:'self, body, personality, health',2:'wealth, family, speech, savings',
   3:'siblings, courage, communication, short travel',4:'home, mother, property, education',
@@ -65,7 +64,7 @@ const HOUSE_SIGNIF = {
   9:'father, luck, dharma, spirituality, long travel',10:'career, status, actions, fame, authority',
   11:'gains, income, desires, elder siblings, friends',12:'loss, foreign, liberation, expenses, bed pleasures'
 };
- 
+
 function getPlanetStatus(name, rasiIdx) {
   if (name==='Rahu'||name==='Ketu') return 'Shadow planet';
   if (RASI_EXALT[name]===rasiIdx) return 'Exalted (Uchham)';
@@ -77,11 +76,11 @@ function getPlanetStatus(name, rasiIdx) {
   if (PLANET_ENEMIES[name]?.includes(lord)) return 'Enemy sign';
   return 'Neutral sign';
 }
- 
+
 function getHouseNum(lagnaRasiIdx, planetRasiIdx) {
   return ((planetRasiIdx - lagnaRasiIdx + 12) % 12) + 1;
 }
- 
+
 // ── Aspects ──
 function getAspects(planetName, houseNum) {
   const norm = h => ((h-1+12)%12)+1;
@@ -92,7 +91,7 @@ function getAspects(planetName, houseNum) {
   if (planetName==='Rahu'||planetName==='Ketu') { aspects.push(norm(houseNum+4), norm(houseNum+8)); }
   return [...new Set(aspects)];
 }
- 
+
 // ── Bala (strength score) ──
 function getBala(name, rasiIdx, house, retrograde, combust) {
   let score = 50;
@@ -113,7 +112,7 @@ function getBala(name, rasiIdx, house, retrograde, combust) {
   if (combust) score -= 20;
   return Math.max(0, Math.min(100, Math.round(score)));
 }
- 
+
 // ── Avastha (planetary state by age of planet based on degree) ──
 function getAvastha(degree) {
   const d = degree % 30;
@@ -123,7 +122,7 @@ function getAvastha(degree) {
   if (d < 24) return 'Vriddha (old)';
   return 'Mrita (dead)';
 }
- 
+
 // ── Moon phase ──
 function getMoonPhase(sunSid, moonSid) {
   const diff = norm360(moonSid - sunSid);
@@ -132,13 +131,13 @@ function getMoonPhase(sunSid, moonSid) {
   const phasePct = Math.round((diff / 360) * 100);
   return { tithi, paksha, diff: diff.toFixed(2), phasePct };
 }
- 
+
 // ── Navamsa (D9) ──
 function getNavamsaSign(sidLon) {
   const totalNavamsas = Math.floor(sidLon / (360/108));
   return totalNavamsas % 12;
 }
- 
+
 // ── Karakas (Jaimini — planet with highest degree is Atmakaraka) ──
 function calcKarakas(planets) {
   const order = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'];
@@ -152,7 +151,7 @@ function calcKarakas(planets) {
   sorted.forEach((p,i) => { if (names[i]) result[names[i]] = p.name; });
   return result;
 }
- 
+
 // ── Arudha Lagna ──
 function calcArudhaLagna(lagnaIdx, lagnaLordHouse) {
   // AL = house as far from lagna lord as lagna lord is from lagna
@@ -160,54 +159,54 @@ function calcArudhaLagna(lagnaIdx, lagnaLordHouse) {
   const al = ((lagnaIdx + dist + dist) % 12);
   return { rasiIdx: al, rasi: RASI_NAMES[al] };
 }
- 
+
 // ── Upapada Lagna (A12) ──
 function calcUpapadaLagna(lagnaIdx, twelfthLordHouse) {
   const dist = twelfthLordHouse - 1;
   const ul = ((lagnaIdx + 11 + dist + dist) % 12);
   return { rasiIdx: ul, rasi: RASI_NAMES[ul] };
 }
- 
+
 // ── Planet positions ──
 function getPlanetPositions(jdUT) {
   const T    = (jdUT - 2451545.0) / 36525;
   const ayan = getLahiriAyanamsha(jdUT);
   const n360 = x => norm360(x);
- 
+
   // Sun & Moon — high accuracy
   const sunTrop  = norm360(solar.apparentLongitude(jdUT) * 180 / Math.PI);
   const moonPos  = moonposition.position(jdUT);
   const moonTrop = norm360(toDeg(moonPos.lon));
- 
+
   // Mercury
   const Mmer = n360(174.7948 + 4.09233445*T*36525);
   const merTrop = n360(252.2509 + 149472.6746*T
     + 23.44*Math.sin(toRad(Mmer)) + 2.98*Math.sin(toRad(2*Mmer)) - 0.14*Math.sin(toRad(3*Mmer)) - 77.4561);
- 
+
   // Venus
   const Mven = n360(212.2606 + 58517.8041*T);
   const venTrop = n360(181.9798 + 58517.8157*T
     + 0.7758*Math.sin(toRad(Mven)) + 0.0033*Math.sin(toRad(2*Mven)) - 131.5637);
- 
+
   // Mars
   const Mmar = n360(19.3730 + 19140.2993*T);
   const marTrop = n360(355.4332 + 19140.2993*T
     + 10.6912*Math.sin(toRad(Mmar)) + 0.6228*Math.sin(toRad(2*Mmar)) + 0.0503*Math.sin(toRad(3*Mmar)) - 286.5016);
- 
+
   // Jupiter
   const Mjup = n360(20.9 + 3034.906*T);
   const jupTrop = n360(34.3515 + 3034.9057*T
     + 5.5549*Math.sin(toRad(Mjup)) + 0.1683*Math.sin(toRad(2*Mjup)) - 14.3312);
- 
+
   // Saturn
   const Msat = n360(317.0207 + 1222.1138*T);
   const satTrop = n360(50.0775 + 1222.1138*T
     + 6.3585*Math.sin(toRad(Msat)) + 0.2204*Math.sin(toRad(2*Msat)) - 0.0108*Math.sin(toRad(3*Msat)) - 92.8553);
- 
+
   // Rahu — mean node (retrograde always)
   const rahuTrop = n360(125.044555 - 1934.136261*T + 0.0020708*T*T);
   const ketuTrop = n360(rahuTrop + 180);
- 
+
   // Retrograde detection (based on speed)
   // Simple: Mercury retro ~3x/yr, Venus ~1x/yr, outer planets use synodic
   const merSpeed = 149472.6746 + 23.44*Math.cos(toRad(Mmer))*4.09233445;
@@ -218,7 +217,7 @@ function getPlanetPositions(jdUT) {
   const marRetro = (T % 0.5323) < 0.0703; // ~26 days / 687 day period approx
   const jupRetro = (Math.cos(toRad(Mjup)) < -0.9);
   const satRetro = (Math.cos(toRad(Msat)) < -0.9);
- 
+
   const tropPositions = {
     Sun:{trop:sunTrop,retro:false}, Moon:{trop:moonTrop,retro:false},
     Mars:{trop:marTrop,retro:marRetro}, Mercury:{trop:merTrop,retro:merRetro},
@@ -226,7 +225,7 @@ function getPlanetPositions(jdUT) {
     Saturn:{trop:satTrop,retro:satRetro}, Rahu:{trop:rahuTrop,retro:true},
     Ketu:{trop:ketuTrop,retro:true}
   };
- 
+
   const result = {};
   for (const [name, pos] of Object.entries(tropPositions)) {
     const sidLon   = sid(pos.trop, ayan);
@@ -234,13 +233,13 @@ function getPlanetPositions(jdUT) {
     const degInRasi= sidLon % 30;
     const nakIdx   = Math.floor(sidLon / (360/27));
     const pada     = Math.floor((sidLon % (360/27)) / ((360/27)/4)) + 1;
- 
+
     // Combustion check
     const sunSid = sid(sunTrop, ayan);
     const angFromSun = norm360(sidLon - sunSid);
     const combOrb = COMBUST_ORB[name] || 0;
     const combust = name !== 'Sun' && combOrb > 0 && (angFromSun < combOrb || angFromSun > (360 - combOrb));
- 
+
     result[name] = {
       trop: pos.trop, sid: sidLon, rasiIdx, rasi: RASI_NAMES[rasiIdx], rasiEn: RASI_EN[rasiIdx],
       degInRasi, nakIdx, nakshatra: NAK_NAMES[nakIdx], nakLord: NAK_LORD[nakIdx],
@@ -252,7 +251,7 @@ function getPlanetPositions(jdUT) {
   }
   return { planets: result, ayanamsha: ayan };
 }
- 
+
 // ── Lagna ──
 function calcLagna(jdUT, lat, lon) {
   const T    = (jdUT - 2451545.0) / 36525;
@@ -271,7 +270,7 @@ function calcLagna(jdUT, lat, lon) {
   return { tropLon:ascTrop, sidLon:ascSid, degInRasi:ascSid%30, rasiIdx:lagnaIdx,
     rasi:RASI_NAMES[lagnaIdx], rasiEn:RASI_EN[lagnaIdx], lord:RASI_LORD[lagnaIdx] };
 }
- 
+
 // ── Dasha ──
 function calcDasha(dob, nakIdx, nakDegInNak) {
   const nakLord     = NAK_LORD[nakIdx];
@@ -327,14 +326,14 @@ function calcDasha(dob, nakIdx, nakDegInNak) {
   }
   return { dashaSequence:dashaSeq, current, antardashas, currentAntar, prayantardashas };
 }
- 
+
 // ── Yoga detection ──
 function detectYogas(planets, lagnaIdx) {
   const yogas = [];
   const H = name => planets[name] ? getHouseNum(lagnaIdx, planets[name].rasiIdx) : 0;
   const ST= name => getPlanetStatus(name, planets[name]?.rasiIdx || 0);
   const KENDRA=[1,4,7,10], TRIKONA=[1,5,9], DUSTHANA=[6,8,12];
- 
+
   // Pancha Mahapurusha
   for (const [name, data] of Object.entries(planets)) {
     const h = H(name), st = ST(name);
@@ -345,24 +344,24 @@ function detectYogas(planets, lagnaIdx) {
         desc:`${name} ${st} in H${h} — ${yN[name]} Yoga`});
     }
   }
- 
+
   // Gajakesari
   const jupFromMoon = ((planets.Jupiter?.rasiIdx - planets.Moon?.rasiIdx + 12)%12)+1;
   if (KENDRA.includes(jupFromMoon))
     yogas.push({name:'Gajakesari Yoga',type:'good',
       desc:`Jupiter ${jupFromMoon}th from Moon — fame, wealth, intelligence`});
- 
+
   // Budhaditya
   if (Math.abs(planets.Sun?.sid - planets.Mercury?.sid) < 15)
     yogas.push({name:'Budhaditya Yoga',type:'good',
       desc:'Sun-Mercury conjunct — sharp intellect, good career, analytical ability'});
- 
+
   // Chandra Mangala
   if (Math.abs(planets.Moon?.sid - planets.Mars?.sid) < 10 ||
       getAspects('Mars', H('Mars')).includes(H('Moon')))
     yogas.push({name:'Chandra Mangala Yoga',type:'good',
       desc:'Moon-Mars connected — bold emotions, strong earning, property'});
- 
+
   // Vipareeta Raja Yoga
   const l6=RASI_LORD[(lagnaIdx+5)%12], l8=RASI_LORD[(lagnaIdx+7)%12], l12=RASI_LORD[(lagnaIdx+11)%12];
   if (DUSTHANA.includes(H(l6))) yogas.push({name:'Vipareeta Raja Yoga (Harsha)',type:'good',
@@ -371,7 +370,7 @@ function detectYogas(planets, lagnaIdx) {
     desc:'8th lord in dusthana — longevity, fearless, gains from hidden sources'});
   if (DUSTHANA.includes(H(l12))) yogas.push({name:'Vipareeta Raja Yoga (Vimala)',type:'good',
     desc:'12th lord in dusthana — spiritual wealth, gains from foreign sources'});
- 
+
   // Graha Yuddha (within 1 degree)
   const warPlanets = ['Mars','Mercury','Jupiter','Venus','Saturn'];
   for (let i=0;i<warPlanets.length;i++) for (let j=i+1;j<warPlanets.length;j++) {
@@ -380,7 +379,7 @@ function detectYogas(planets, lagnaIdx) {
       yogas.push({name:`Graha Yuddha: ${warPlanets[i]}-${warPlanets[j]}`,type:'warn',
         desc:`${warPlanets[i]} and ${warPlanets[j]} within 1° — planetary war weakens the loser`});
   }
- 
+
   // Neecha Bhanga
   for (const [name, data] of Object.entries(planets)) {
     if (!ST(name).includes('Debilitated')) continue;
@@ -397,7 +396,7 @@ function detectYogas(planets, lagnaIdx) {
       yogas.push({name:`${name} Neecham (ACTIVE)`,type:'bad',planet:name,nullified:false,
         desc:`${name} debilitated in ${data.rasi} — weakened, struggles in its significations`});
   }
- 
+
   // Mangal Dosha with nullification
   const marsH = H('Mars');
   if ([1,2,4,7,8,12].includes(marsH)) {
@@ -411,14 +410,22 @@ function detectYogas(planets, lagnaIdx) {
       planet:'Mars', house:marsH, nullified:!active, nullifiers:null2,
       desc:`Mars in H${marsH} — ${active?'Mangal Dosha ACTIVE: affects marriage harmony, delays possible':'Mangal Dosha NULLIFIED: '+null2.join('; ')}`});
   }
- 
-  // Kaal Sarpa
+
+  // Kaal Sarpa — CORRECT: all 7 planets must be within 180° arc from Rahu to Ketu (going forward in zodiac)
   const rahuSid = planets.Rahu?.sid || 0, ketuSid = planets.Ketu?.sid || 0;
   const allSids = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'].map(n=>planets[n]?.sid||0);
-  const rMin=Math.min(rahuSid,ketuSid), rMax=Math.max(rahuSid,ketuSid);
-  const allIn = allSids.every(s=>s>=rMin&&s<=rMax);
-  const allOut= allSids.every(s=>s<=rMin||s>=rMax);
-  if (allIn||allOut) {
+  // Arc from Rahu → Ketu going FORWARD (Rahu always retrograde, so arc is Rahu→ zodiac forward → Ketu)
+  // A planet is "between" Rahu and Ketu if going from Rahu forward you reach it before Ketu
+  function isBetweenRahuKetu(sid, rahuSid, ketuSid) {
+    // Normalize all to 0-360
+    const r = norm360(rahuSid), k = norm360(ketuSid), s = norm360(sid);
+    // Arc from r to k going forward
+    if (r <= k) return s >= r && s <= k;
+    else return s >= r || s <= k; // wraps around 0
+  }
+  const allBetween = allSids.every(s => isBetweenRahuKetu(s, rahuSid, ketuSid));
+  const allOutside = allSids.every(s => !isBetweenRahuKetu(s, rahuSid, ketuSid));
+  if (allBetween || allOutside) {
     const ksNull=[];
     allSids.forEach((s,i)=>{ const n=['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn'][i];
       if(Math.abs(s-rahuSid)<5||Math.abs(s-ketuSid)<5) ksNull.push(`${n} conjunct node`); });
@@ -427,38 +434,38 @@ function detectYogas(planets, lagnaIdx) {
       type:ksNull.length?'warn':'bad', nullified:ksNull.length>0, nullifiers:ksNull,
       desc:`All planets between Rahu-Ketu axis — ${ksNull.length?'reduced by: '+ksNull.join('; '):'karmic obstacles, periodic reversals, rise after 45'}`});
   }
- 
+
   // Combustion yogas
   for (const [name, data] of Object.entries(planets)) {
     if (data.combust && name!=='Sun')
       yogas.push({name:`${name} Combust (Astangata)`,type:'bad',planet:name,
         desc:`${name} combust — weakened significations, reduced ability to give results`});
   }
- 
+
   // Retrograde yogas
   for (const [name, data] of Object.entries(planets)) {
     if (data.retrograde && !['Rahu','Ketu','Sun','Moon'].includes(name))
       yogas.push({name:`${name} Retrograde (Vakri)`,type:'warn',planet:name,
-        desc:`${name} retrograde — karmic planet, stronger but turned inward, delays then sudden results`});
+        desc:`${name} retrograde — internalized energy, results come through revisiting and reworking themes; not simply stronger or weaker, depends on sign dignity and house context`});
   }
- 
+
   // Love marriage yoga — 5th and 7th lords connected
   const l5 = RASI_LORD[(lagnaIdx+4)%12], l7 = RASI_LORD[(lagnaIdx+6)%12];
   const l5H = H(l5), l7H = H(l7);
   if (l5H===7||l7H===5||l5H===l7H||(Math.abs((planets[l5]?.sid||0)-(planets[l7]?.sid||0))<10))
-    yogas.push({name:'Love Marriage Yoga',type:'good',
+    yogas.push({name:'Love Marriage Indicators',type:'good',
       desc:`5th lord (${l5}) and 7th lord (${l7}) connected — love marriage strongly indicated`});
- 
+
   // Delayed marriage indicators
   const satInH7 = H('Saturn')===7, rahuInH7 = H('Rahu')===7, ketuInH7 = H('Ketu')===7;
   const l7InDust = DUSTHANA.includes(H(l7));
   if (satInH7||rahuInH7||ketuInH7||l7InDust)
-    yogas.push({name:'Delayed Marriage Indicator',type:'warn',
+    yogas.push({name:'Marriage Delay Indicators (placement effects, not dosha)',type:'warn',
       desc:`Marriage may be delayed: ${[satInH7?'Saturn in H7':'',rahuInH7?'Rahu in H7':'',ketuInH7?'Ketu in H7':'',l7InDust?`7th lord in dusthana (H${H(l7)})`:''  ].filter(Boolean).join(', ')}`});
- 
+
   return yogas;
 }
- 
+
 // ── City coordinates ──
 const CITY_COORDS = {
   kottayam:{lat:9.5916,lon:76.5222,tz:5.5,name:'Kottayam, Kerala'},
@@ -515,12 +522,12 @@ const CITY_COORDS = {
   kumbakonam:{lat:10.9602,lon:79.3845,tz:5.5,name:'Kumbakonam'},
   tirunelveli:{lat:8.7139,lon:77.7567,tz:5.5,name:'Tirunelveli'},
 };
- 
+
 function getCityCoords(place) {
   const key = place.toLowerCase().trim().split(',')[0].trim().replace(/\./g,'');
   return CITY_COORDS[key] || null;
 }
- 
+
 // ── Navamsa chart ──
 function buildNavamsaChart(planets, lagnaNavamsaIdx) {
   const houses = {};
@@ -535,21 +542,21 @@ function buildNavamsaChart(planets, lagnaNavamsaIdx) {
   return { planets: result, houses, lagna: { rasiIdx: lagnaNavamsaIdx,
     rasi: RASI_NAMES[lagnaNavamsaIdx], lord: RASI_LORD[lagnaNavamsaIdx] } };
 }
- 
+
 // ── Full chart build ──
 function buildFullChart(dob, tob, place, overrides={}) {
   const [year,month,day] = dob.split('-').map(Number);
   const [hh,mm]          = tob.split(':').map(Number);
   const coords = getCityCoords(place);
   if (!coords) throw new Error(`City "${place}" not found. Try a nearby major city.`);
- 
+
   const utcHours = hh - coords.tz + mm/60;
   const utcDay   = day + utcHours/24;
   const jdUT     = julian.CalendarGregorianToJD(year, month, utcDay);
- 
+
   const { planets, ayanamsha } = getPlanetPositions(jdUT);
   const lagna = calcLagna(jdUT, coords.lat, coords.lon);
- 
+
   let lagnaIdx = lagna.rasiIdx;
   if (overrides.lagna) {
     const idx = RASI_NAMES.indexOf(overrides.lagna);
@@ -566,11 +573,11 @@ function buildFullChart(dob, tob, place, overrides={}) {
       planets.Moon.nakLord=NAK_LORD[nIdx]; planets.Moon.pada=2;
     }
   }
- 
+
   // Add house, status, bala, aspects to each planet
   const houseAspects = {};
   for (let h=1;h<=12;h++) houseAspects[h]=[];
- 
+
   for (const [name, p] of Object.entries(planets)) {
     p.house   = getHouseNum(lagnaIdx, p.rasiIdx);
     p.status  = getPlanetStatus(name, p.rasiIdx);
@@ -578,42 +585,42 @@ function buildFullChart(dob, tob, place, overrides={}) {
     p.aspects = getAspects(name, p.house);
     p.aspects.forEach(h => { if (!houseAspects[h]) houseAspects[h]=[]; houseAspects[h].push(name); });
   }
- 
+
   const moonNakIdx   = planets.Moon.nakIdx;
   let moonDegInNak   = planets.Moon.sid % (360/27);
   if (overrides.nakshatra && NAK_NAMES.indexOf(overrides.nakshatra)>=0) moonDegInNak=(360/27)*0.5;
- 
+
   const nakshatra = {
     name:NAK_NAMES[moonNakIdx], lord:NAK_LORD[moonNakIdx],
     gana:NAK_GANA[moonNakIdx], nadi:NAK_NADI[moonNakIdx],
     yoni:NAK_YONI[moonNakIdx], deity:NAK_DEITY[moonNakIdx],
     pada:planets.Moon.pada, index:moonNakIdx,
   };
- 
+
   const dasha   = calcDasha(dob, moonNakIdx, moonDegInNak);
   const yogas   = detectYogas(planets, lagnaIdx);
   const moonPhase = getMoonPhase(planets.Sun.sid, planets.Moon.sid);
   const karakas   = calcKarakas(planets);
- 
+
   // Arudha Lagna
   const lagnaLord = RASI_LORD[lagnaIdx];
   const lagnaLordHouse = planets[lagnaLord]?.house || 1;
   const arudhaLagna = calcArudhaLagna(lagnaIdx, lagnaLordHouse);
- 
+
   // Upapada Lagna (from 12th house lord)
   const twelfthLord = RASI_LORD[(lagnaIdx+11)%12];
   const twelfthLordHouse = planets[twelfthLord]?.house || 1;
   const upapadaLagna = calcUpapadaLagna(lagnaIdx, twelfthLordHouse);
- 
+
   // Navamsa
   const lagnaNavamsaIdx = getNavamsaSign(lagna.sidLon);
   const navamsa = buildNavamsaChart(planets, lagnaNavamsaIdx);
- 
+
   // Houses
   const houses={};
   for (let h=1;h<=12;h++) houses[h]=[];
   for (const [name,p] of Object.entries(planets)) houses[p.house].push(name);
- 
+
   // Build all advanced engines
   const houseLords = buildHouseLordsEngine(planets, lagnaIdx);
   const d10 = buildDivisionalChart(planets, lagnaIdx, 10);  // career
@@ -628,7 +635,7 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const advancedYogas = detectAdvancedYogas(planets, lagnaIdx);
   // Merge all yogas
   const allYogas = [...yogas, ...advancedYogas];
- 
+
   // Batch 3 engines
   const transitTriggers = getTransitTriggers(planets, lagnaIdx, dasha, transits, karakas, upapadaLagna);
   const refinedMarriage = getRefinedMarriageTrigger(dasha, planets, lagnaIdx, karakas, upapadaLagna);
@@ -639,7 +646,7 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const argala7  = getArgala(planets, lagnaIdx, 7);
   const argala10 = getArgala(planets, lagnaIdx, 10);
   const argala1  = getArgala(planets, lagnaIdx, 1);
- 
+
   // Batch 2 engines
   const dashaEventTriggers = getDashaEventTriggers(dasha, planets, lagnaIdx);
   const upapadaLordAnalysis = analyzeUpapadaLord(upapadaLagna, planets, lagnaIdx);
@@ -648,18 +655,18 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const secretRelationship = getSecretRelationshipIndicators(planets, lagnaIdx);
   const foreignSettlement = getForeignSettlementIndicators(planets, lagnaIdx, dasha);
   const childrenTiming = getChildrenTiming(planets, lagnaIdx, dasha, transits);
- 
+
   // Full weighted scores + triple confirmation
   const weightedScores = getFullWeightedScores(planets, lagnaIdx, allYogas, navamsa, upapadaLordAnalysis, divorceIndicators);
   const tripleConfirmation = getTripleConfirmation(planets, lagnaIdx,
     {...dasha, dashaEventTriggers}, transits, allYogas, weightedScores);
- 
+
   // Scoring engines
   const planetRanking = getWeightedPlanetRanking(planets, allYogas);
   const contradictions = detectContradictions(planets, allYogas);
   const verifiedShockFacts = getVerifiedShockFacts({}, planets, lagnaIdx, allYogas);
   const marriageScores = getMarriageScores(planets, lagnaIdx, allYogas, venusAffliction, divorceIndicators, navamsaMarriage);
- 
+
   // Batch 5 — Precision layer
   const age = Math.floor((Date.now()-new Date(dob))/(365.25*24*3600*1000));
   const planetMaturity = getPlanetMaturityStatus(planets, dob);
@@ -670,7 +677,7 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const bhriguBindu = getBhriguBindu(planets);
   const unfinishedKarma = getUnfinishedKarma(planets, karakas);
   const probabilityMatrix = getProbabilityMatrix({dasha,refinedMarriage}, weightedScores, tripleConfirmation);
- 
+
   // Batch 6 — Precision Layer 2
   const vargottama = detectVargottama(planets);
   const pushkaraNavamsa = detectPushkaraNavamsa(planets);
@@ -680,9 +687,24 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const recoveryIndicators = getRecoveryIndicators(planets, lagnaIdx, allYogas);
   const transitHeatmap = getTransitHeatmap(lagnaIdx, planets.Moon.rasiIdx);
   const dusthanaTransformations = getDusthanaTransformations(planets, lagnaIdx, allYogas);
- 
+
   // Batch 7 — Certainty & Precision
   const rectificationWarning = getRectificationWarning(lagna, planets);
+
+  // Batch 8 — Deep Analysis Engines
+  const houseStory = buildHouseStoryEngine(planets, lagnaIdx, allYogas);
+  const dispositorChain = getDispositorChain(planets, lagnaIdx);
+  const planetClusters = getPlanetClusters(planets, lagnaIdx);
+  const elementBalance = getElementBalance(planets);
+  const modalityEngine = getModalityEngine(planets);
+  const alVsLagna = getALvsLagna(planets, lagnaIdx, arudhaLagna);
+  const breakpointYears = getBreakpointYears(planets, lagnaIdx, dasha, dob);
+  const wealthStyle = getWealthStyle(planets, lagnaIdx, allYogas);
+  const relationshipWounds = getRelationshipWounds(planets, lagnaIdx, allYogas);
+  const powerEngine = getPowerEngine(planets, lagnaIdx, allYogas);
+  const fearEngine = getFearEngine(planets, lagnaIdx, allYogas);
+  const nakshatraDeep = getNakshatraDeepAnalysis(planets, nakshatra);
+  const peakPowerYears = getPeakPowerYears(planets, lagnaIdx, dasha, dob);
   const marriageTriggerStack = getMarriageTriggerStack(planets, lagnaIdx, {...dasha, dashaEventTriggers}, transitTriggers, karakas, upapadaLagna, navamsa, weightedScores);
   const venusAfflictionDetailed = getAfflictionSeverityDetailed('Venus', planets, lagnaIdx, allYogas);
   const saturnAfflictionDetailed = getAfflictionSeverityDetailed('Saturn', planets, lagnaIdx, allYogas);
@@ -690,7 +712,38 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const careerProtector = getDomainProtector(planets, lagnaIdx, allYogas, 'career');
   const wealthProtector = getDomainProtector(planets, lagnaIdx, allYogas, 'wealth');
   const karmaClassification = getKarmaClassification(planets, lagnaIdx, allYogas, karakas);
- 
+
+  // Batch 10 — Deep Karma Engines
+  const kulaDevata = getKulaDevataEngine(planets, lagnaIdx, karakas);
+  const finalSentence = getFinalUnfinishedSentence(planets, lagnaIdx, karakas);
+  const soulExhaustion = getSoulExhaustionIndex(planets, lagnaIdx);
+  const vakShakti = getVakShaktiEngine(planets, lagnaIdx, karakas);
+  const sacredSound = getSacredSoundKey(nakshatra, karakas, lagnaIdx);
+  const drishtiShakti = getDrishtiShaktiEngine(planets, lagnaIdx);
+  const swapnaEngine = getSwapnaEngine(planets, lagnaIdx);
+  const guruArrival = getGuruArrivalEngine(planets, lagnaIdx, dasha);
+  const hiddenEnemy = getHiddenEnemyEngine(planets, lagnaIdx);
+  const sacredFear = getSacredFearEngine(planets, lagnaIdx);
+  const divineProtection = getDivineProtectionEngine(planets, lagnaIdx, allYogas);
+  const preBirthChoice = getPreBirthChoiceEngine(planets, lagnaIdx, nakshatra, karakas);
+  const breakingEvent = getBreakingEventEngine(planets, lagnaIdx, dasha);
+  const deathPurpose = getDeathPurposeEngine(planets, lagnaIdx, karakas);
+  const shaktiAwakening = getShaktiAwakeningEngine(planets, lagnaIdx, allYogas);
+  const shadowInheritance = getShadowInheritance(planets, lagnaIdx);
+  const personToForgive = getPersonToForgiveEngine(planets, lagnaIdx, karakas);
+  const lifeAlmostLived = getLifeAlmostLived(planets, lagnaIdx, allYogas, dasha);
+  const timeOfDayKarma = getTimeOfDayKarma(tob, lagna);
+
+  // Batch 9 — Domain engines
+  const parentKarma = getParentKarmaEngine(planets, lagnaIdx, dasha, allYogas);
+  const businessVsJob = getBusinessVsJobEngine(planets, lagnaIdx, dasha, allYogas);
+  const lossEngine = getLossEngine(planets, lagnaIdx, dasha);
+  const reputationEngine = getReputationEngine(planets, lagnaIdx, dasha, allYogas, karakas);
+  const inLawKarma = getInLawKarmaEngine(planets, lagnaIdx, upapadaLagna, navamsa);
+  const siblingKarma = getSiblingKarmaEngine(planets, lagnaIdx, dasha);
+  const debtLitigation = getDebtLitigationEngine(planets, lagnaIdx, dasha);
+  const repeatedKarma = getRepeatedKarmaDetection(planets, lagnaIdx, navamsa, d10, d7);
+
   return {
     input:{dob,tob,place,coords},
     jd:jdUT, ayanamsha:parseFloat(ayanamsha.toFixed(4)),
@@ -714,23 +767,32 @@ function buildFullChart(dob, tob, place, overrides={}) {
     vargottama, pushkaraNavamsa, planetDominance, dashaQuality,
     birthTimeConfidence, recoveryIndicators, transitHeatmap, dusthanaTransformations,
     rectificationWarning, marriageTriggerStack,
+    houseStory, dispositorChain, planetClusters, elementBalance, modalityEngine,
+    parentKarma, businessVsJob, lossEngine, reputationEngine, inLawKarma,
+    siblingKarma, debtLitigation, repeatedKarma,
+    alVsLagna, breakpointYears, wealthStyle, relationshipWounds,
+    kulaDevata, finalSentence, soulExhaustion, vakShakti, sacredSound,
+    drishtiShakti, swapnaEngine, guruArrival, hiddenEnemy, sacredFear,
+    divineProtection, preBirthChoice, breakingEvent, deathPurpose,
+    shaktiAwakening, shadowInheritance, personToForgive, lifeAlmostLived, timeOfDayKarma,
+    powerEngine, fearEngine, nakshatraDeep, peakPowerYears,
     venusAfflictionDetailed, saturnAfflictionDetailed,
     marriageProtector, careerProtector, wealthProtector, karmaClassification,
     houseSignif:HOUSE_SIGNIF,
     metadata:{calculatedAt:new Date().toISOString(),method:'Lahiri Ayanamsha, Whole Sign Houses'}
   };
 }
- 
+
 module.exports = {
   buildFullChart, RASI_NAMES, RASI_EN, RASI_LORD,
   NAK_NAMES, NAK_LORD, NAK_YEARS, NAK_GANA, NAK_NADI, NAK_YONI,
   DASHA_ORDER, getCityCoords, HOUSE_SIGNIF, getHouseNum, getAspects
 };
- 
+
 // ═══════════════════════════════════════════════════
 // ADVANCED ENGINE ADDITIONS
 // ═══════════════════════════════════════════════════
- 
+
 // ── House Lords Engine ──
 // For every house: lord, lord placement, lord dignity, lord aspects, lord conditions
 function buildHouseLordsEngine(planets, lagnaIdx) {
@@ -766,17 +828,17 @@ function buildHouseLordsEngine(planets, lagnaIdx) {
   }
   return lords;
 }
- 
+
 // ── Divisional Charts ──
 function buildDivisionalChart(planets, lagnaIdx, divisor) {
   const houses = {};
   for (let h = 1; h <= 12; h++) houses[h] = [];
   const result = {};
- 
+
   // Lagna in divisional chart
   const lagnaSignIdx = lagnaIdx;
   const lagnaDiv = Math.floor((lagnaSignIdx * divisor) % 12);
- 
+
   for (const [name, p] of Object.entries(planets)) {
     // Divisional chart position
     const divPos = Math.floor((p.rasiIdx * divisor + Math.floor(p.degInRasi / (30 / divisor))) % 12);
@@ -789,45 +851,45 @@ function buildDivisionalChart(planets, lagnaIdx, divisor) {
   }
   return { planets: result, houses, lagnaRasiIdx: lagnaDiv, lagnaRasi: RASI_NAMES[lagnaDiv] };
 }
- 
+
 // ── Transit Engine (current planetary positions) ──
 function getCurrentTransits(natLagnaIdx, natMoonRasiIdx) {
   const now = new Date();
   const jdNow = 2451545.0 + (now - new Date('2000-01-01T12:00:00Z')) / (1000 * 86400);
   const ayan = getLahiriAyanamsha(jdNow);
   const T = (jdNow - 2451545.0) / 36525;
- 
+
   // Current positions (simplified but accurate for transit purposes)
   const Mjup = norm360(20.9 + 3034.906 * T);
   const jupTrop = norm360(34.3515 + 3034.9057 * T + 5.5549 * Math.sin(toRad(Mjup)) - 14.3312);
   const jupSid = Math.floor(sid(jupTrop, ayan) / 30);
- 
+
   const Msat = norm360(317.0207 + 1222.1138 * T);
   const satTrop = norm360(50.0775 + 1222.1138 * T + 6.3585 * Math.sin(toRad(Msat)) - 92.8553);
   const satSid = Math.floor(sid(satTrop, ayan) / 30);
- 
+
   const rahuTrop = norm360(125.044555 - 1934.136261 * T);
   const rahuSid = Math.floor(sid(rahuTrop, ayan) / 30);
   const ketuSid = (rahuSid + 6) % 12;
- 
+
   // Transit house from natal lagna and natal moon
   const jupFromLagna = ((jupSid - natLagnaIdx + 12) % 12) + 1;
   const satFromLagna = ((satSid - natLagnaIdx + 12) % 12) + 1;
   const rahuFromLagna = ((rahuSid - natLagnaIdx + 12) % 12) + 1;
   const jupFromMoon = ((jupSid - natMoonRasiIdx + 12) % 12) + 1;
   const satFromMoon = ((satSid - natMoonRasiIdx + 12) % 12) + 1;
- 
+
   // Double transit check: Jupiter and Saturn both in favorable houses = major event
   const JUPTRANSIT_GOOD = [1,2,4,5,7,9,10,11];
   const SATTRANSIT_GOOD = [3,6,11];
   const doubleTransit = JUPTRANSIT_GOOD.includes(jupFromMoon) && SATTRANSIT_GOOD.includes(satFromMoon);
- 
+
   // Sade Sati check: Saturn in 12, 1, or 2 from Moon
   const sadeSati = [12, 1, 2].includes(satFromMoon);
- 
+
   // Ashtama Shani: Saturn in 8th from Moon
   const ashtamaShani = satFromMoon === 8;
- 
+
   return {
     jupiter: { rasi: RASI_NAMES[jupSid], fromLagna: jupFromLagna, fromMoon: jupFromMoon,
       favorable: JUPTRANSIT_GOOD.includes(jupFromMoon) },
@@ -847,7 +909,7 @@ function getCurrentTransits(natLagnaIdx, natMoonRasiIdx) {
     ].filter(Boolean).join(' | ')
   };
 }
- 
+
 // ── A7 Darapada (relationship image) ──
 function calcA7(planets, lagnaIdx) {
   const h7Lord = RASI_LORD[(lagnaIdx + 6) % 12];
@@ -858,7 +920,7 @@ function calcA7(planets, lagnaIdx) {
   return { rasiIdx: a7Idx < 0 ? a7Idx + 12 : a7Idx % 12,
     rasi: RASI_NAMES[((a7Idx % 12) + 12) % 12] };
 }
- 
+
 // ── Venus affliction score ──
 function getVenusAffliction(planets, lagnaIdx) {
   const venus = planets.Venus;
@@ -866,7 +928,7 @@ function getVenusAffliction(planets, lagnaIdx) {
   let score = 0;
   const factors = [];
   const venusH = venus.house;
- 
+
   // Saturn aspect on Venus
   if ((planets.Saturn?.aspects || []).includes(venusH)) { score += 30; factors.push('Saturn aspects Venus (delays/cold in love)'); }
   // Mars aspect on Venus
@@ -881,19 +943,19 @@ function getVenusAffliction(planets, lagnaIdx) {
   if ([6,8,12].includes(venusH)) { score += 15; factors.push(`Venus in H${venusH} (hidden/troubled love)`); }
   // Ketu conjunct Venus
   if (Math.abs((planets.Ketu?.sid || 0) - venus.sid) < 10) { score += 20; factors.push('Ketu conjunct Venus (detachment in relationships, spiritual love)'); }
- 
+
   const level = score >= 60 ? 'HIGH' : score >= 30 ? 'MODERATE' : 'LOW';
   return { score, level, factors,
     summary: `Venus affliction: ${level} (${score}/100) — ${factors.join('; ') || 'Venus relatively unafflicted'}` };
 }
- 
+
 // ── Divorce & Second Marriage Indicators ──
 function getDivorceIndicators(planets, lagnaIdx) {
   const indicators = [];
   const H = name => planets[name]?.house || 0;
   const l7 = RASI_LORD[(lagnaIdx + 6) % 12];
   const l7H = H(l7);
- 
+
   // 7th lord in 6, 8, or 12
   if ([6,8,12].includes(l7H)) indicators.push(`7th lord ${l7} in H${l7H} (dusthana) — marriage faces obstacles`);
   // Mars + Saturn both in 7th
@@ -908,7 +970,7 @@ function getDivorceIndicators(planets, lagnaIdx) {
   // Multiple planets in 7th (4+)
   const h7Planets = Object.values(planets).filter(p => p.house === 7).length;
   if (h7Planets >= 3) indicators.push(`${h7Planets} planets in H7 — complex, multi-layered marriage life`);
- 
+
   return {
     count: indicators.length,
     level: indicators.length >= 3 ? 'HIGH' : indicators.length >= 2 ? 'MODERATE' : indicators.length >= 1 ? 'LOW' : 'NONE',
@@ -918,13 +980,13 @@ function getDivorceIndicators(planets, lagnaIdx) {
       : 'No significant divorce indicators — marriage expected to be stable'
   };
 }
- 
+
 // ── Psychological Engine ──
 function getPsychologicalProfile(planets, lagnaIdx) {
   const profile = {};
   const H = name => planets[name]?.house || 0;
   const ST = name => planets[name]?.status || '';
- 
+
   // Abandonment wound: Moon afflicted (Saturn aspect, 8th/12th house, Ketu conjunct)
   const moonH = H('Moon');
   const abandonmentFactors = [];
@@ -932,7 +994,7 @@ function getPsychologicalProfile(planets, lagnaIdx) {
   if ((planets.Saturn?.aspects||[]).includes(moonH)) abandonmentFactors.push('Saturn aspects Moon (emotional coldness, loneliness felt deeply)');
   if (Math.abs((planets.Ketu?.sid||0) - (planets.Moon?.sid||0)) < 10) abandonmentFactors.push('Ketu conjunct Moon (detachment, feeling of being different/abandoned)');
   profile.abandonmentWound = { present: abandonmentFactors.length > 0, factors: abandonmentFactors };
- 
+
   // Father wound: Sun afflicted or in 6/8/12, Saturn aspects Sun
   const sunH = H('Sun');
   const fatherFactors = [];
@@ -940,31 +1002,31 @@ function getPsychologicalProfile(planets, lagnaIdx) {
   if ((planets.Saturn?.aspects||[]).includes(sunH)) fatherFactors.push('Saturn aspects Sun (authority conflict, father cold or stern)');
   if (ST('Sun').includes('Debilitated')) fatherFactors.push('Sun debilitated (father figure weak or absent)');
   profile.fatherWound = { present: fatherFactors.length > 0, factors: fatherFactors };
- 
+
   // Mother wound: Moon afflicted, 4th house issues
   const h4 = Object.values(planets).filter(p => p.house === 4).map((_, i) => i);
   const motherFactors = [...abandonmentFactors];
   if ((planets.Mars?.aspects||[]).includes(4) || H('Mars') === 4) motherFactors.push('Mars influence on H4 (conflict in home, difficult mother relationship)');
   profile.motherWound = { present: motherFactors.length > 0, factors: motherFactors };
- 
+
   // Emotional repression: Moon in earth signs or Saturn/Ketu influenced
   const repressionFactors = [];
   if (['Vrischika','Makara','Kumbha'].includes(planets.Moon?.rasi)) repressionFactors.push(`Moon in ${planets.Moon?.rasi} (emotions suppressed, controlled outward expression)`);
   if ((planets.Saturn?.aspects||[]).includes(moonH)) repressionFactors.push('Saturn aspects Moon (difficulty expressing feelings)');
   profile.emotionalRepression = { present: repressionFactors.length > 0, factors: repressionFactors };
- 
+
   // Obsessive love: Rahu-Venus connection, 8th-5th connection
   const obsessionFactors = [];
   if (Math.abs((planets.Rahu?.sid||0) - (planets.Venus?.sid||0)) < 10) obsessionFactors.push('Rahu-Venus conjunct (intense obsessive love, desire for forbidden)');
   if ((planets.Mars?.aspects||[]).includes(H('Venus'))) obsessionFactors.push('Mars aspects Venus (passionate, possessive in love)');
   profile.obsessiveLove = { present: obsessionFactors.length > 0, factors: obsessionFactors };
- 
+
   // Self-sabotage: 8th lord strong, Ketu in 1/5/9
   const sabotageFactors = [];
   if ([1,5,9].includes(H('Ketu'))) sabotageFactors.push(`Ketu in H${H('Ketu')} (self-undermining, stepping back from success)`);
   if ([6,8,12].includes(H(RASI_LORD[(lagnaIdx)%12]))) sabotageFactors.push('Lagna lord in dusthana (tendency to undermine own progress)');
   profile.selfSabotage = { present: sabotageFactors.length > 0, factors: sabotageFactors };
- 
+
   // Build summary strings
   const summary = [];
   if (profile.abandonmentWound.present) summary.push(`ABANDONMENT PATTERN: ${abandonmentFactors.join('; ')}`);
@@ -973,11 +1035,11 @@ function getPsychologicalProfile(planets, lagnaIdx) {
   if (profile.emotionalRepression.present) summary.push(`EMOTIONAL REPRESSION: ${repressionFactors.join('; ')}`);
   if (profile.obsessiveLove.present) summary.push(`OBSESSIVE LOVE PATTERN: ${obsessionFactors.join('; ')}`);
   if (profile.selfSabotage.present) summary.push(`SELF-SABOTAGE: ${sabotageFactors.join('; ')}`);
- 
+
   profile.summary = summary.join(' || ');
   return profile;
 }
- 
+
 // ── Gandanta Detection ──
 // Junction points between water and fire signs (Pisces/Aries, Cancer/Leo, Scorpio/Sagittarius)
 function detectGandanta(planets) {
@@ -1002,17 +1064,17 @@ function detectGandanta(planets) {
   }
   return gandanta;
 }
- 
+
 // ── Additional Yogas ──
 function detectAdvancedYogas(planets, lagnaIdx) {
   const yogas = [];
   const H = name => planets[name]?.house || 0;
- 
+
   // Guru Chandal Yoga
   if (Math.abs((planets.Jupiter?.sid||0) - (planets.Rahu?.sid||0)) < 10)
     yogas.push({name:'Guru Chandal Yoga',type:'warn',
       desc:'Jupiter conjunct Rahu — unconventional wisdom, breaks from tradition, foreign guru, obsessive beliefs'});
- 
+
   // Pitru Dosha (Sun afflicted by Rahu/Ketu, or Sun in 9th with malefics)
   const sunH = H('Sun');
   const rahuNearSun = Math.abs((planets.Rahu?.sid||0) - (planets.Sun?.sid||0)) < 15;
@@ -1020,12 +1082,12 @@ function detectAdvancedYogas(planets, lagnaIdx) {
   if (rahuNearSun || ketuNearSun || (sunH === 9 && (H('Saturn')===9 || H('Mars')===9)))
     yogas.push({name:'Pitru Dosha',type:'warn',
       desc:'Sun afflicted by nodes — ancestral karma unresolved, father-related difficulties, debt to ancestors. Pitra tarpan and Navgraha puja recommended.'});
- 
+
   // Shrapit Dosha (Saturn + Rahu conjunction)
   if (Math.abs((planets.Saturn?.sid||0) - (planets.Rahu?.sid||0)) < 10)
     yogas.push({name:'Shrapit Dosha',type:'warn',
       desc:'Saturn + Rahu conjunct — curse from past life, repeated patterns of suffering and delay in same area of life. Requires Shrapit Dosha Nivaran puja.'});
- 
+
   // Kemdrum Yoga (Moon alone, no planets in adjacent houses)
   const moonH = H('Moon');
   const adjH1 = ((moonH - 2 + 12) % 12) + 1, adjH2 = (moonH % 12) + 1;
@@ -1034,18 +1096,24 @@ function detectAdvancedYogas(planets, lagnaIdx) {
   if (noAdj) {
     const kemNull = [];
     if ([1,4,7,10].includes(moonH)) kemNull.push('Moon in Kendra — Kemdrum cancelled');
+    // Benefic aspect cancellation
+    if ((planets.Jupiter?.aspects||[]).includes(moonH)) kemNull.push('Jupiter aspects Moon — Kemdrum cancelled');
+    if ((planets.Venus?.aspects||[]).includes(moonH)) kemNull.push('Venus aspects Moon — Kemdrum cancelled');
+    // Sun or Mercury in adjacent houses
+    const sunAdj = [planets.Sun?.house].some(h => [adjH1, adjH2, moonH].includes(h));
+    if (sunAdj) kemNull.push('Sun in adjacent house — Kemdrum cancelled');
     yogas.push({name:`Kemdrum Yoga${kemNull.length?' (CANCELLED)':''}`,type:'warn',
       nullified:kemNull.length>0, nullifiers:kemNull,
       desc:`Moon isolated in H${moonH} — ${kemNull.length?'cancelled: '+kemNull.join('; '):'emotional isolation, mental loneliness, periods of self-reliance forced by circumstances'}`});
   }
- 
+
   // Lakshmi Yoga: 9th lord in own/exalt in Kendra or Trikona + Venus strong
   const l9 = RASI_LORD[(lagnaIdx+8)%12];
   const l9H = H(l9), l9St = planets[l9]?.status||'';
   if ([1,4,5,7,9,10].includes(l9H) && (l9St.includes('Exalted')||l9St.includes('Own')))
     yogas.push({name:'Lakshmi Yoga',type:'good',
       desc:`9th lord ${l9} strong in H${l9H} — exceptional wealth, grace, material prosperity, divine favor`});
- 
+
   // Dharma-Karma Adhipati Yoga: lords of 9 and 10 conjunct or exchange
   const l10 = RASI_LORD[(lagnaIdx+9)%12];
   const l10H = H(l10);
@@ -1053,10 +1121,10 @@ function detectAdvancedYogas(planets, lagnaIdx) {
       Math.abs((planets[l9]?.sid||0) - (planets[l10]?.sid||0)) < 10)
     yogas.push({name:'Dharma-Karma Adhipati Yoga',type:'good',
       desc:`9th lord (${l9}) and 10th lord (${l10}) connected — exceptional career rise, dharmic success, respected profession, work aligned with higher purpose`});
- 
+
   return yogas;
 }
- 
+
 module.exports.buildHouseLordsEngine = buildHouseLordsEngine;
 module.exports.buildDivisionalChart = buildDivisionalChart;
 module.exports.getCurrentTransits = getCurrentTransits;
@@ -1066,11 +1134,11 @@ module.exports.getDivorceIndicators = getDivorceIndicators;
 module.exports.getPsychologicalProfile = getPsychologicalProfile;
 module.exports.detectGandanta = detectGandanta;
 module.exports.detectAdvancedYogas = detectAdvancedYogas;
- 
+
 // ═══════════════════════════════════════════════════
 // ADVANCED ENGINE — BATCH 2
 // ═══════════════════════════════════════════════════
- 
+
 // ── Antardasha + Pratyantar with event trigger logic ──
 function getDashaEventTriggers(dasha, planets, lagnaIdx) {
   const H = name => planets[name]?.house || 0;
@@ -1079,20 +1147,20 @@ function getDashaEventTriggers(dasha, planets, lagnaIdx) {
   const WEALTH_HOUSES   = [2,11,9];
   const CHILD_HOUSES    = [5,9,1];
   const FOREIGN_HOUSES  = [12,9,8];
- 
+
   function isActivator(lord, houses) {
     const h = H(lord);
     const aspects = planets[lord]?.aspects || [];
     return houses.some(hx => h === hx || aspects.includes(hx));
   }
- 
+
   const triggers = {
     marriage:[], career:[], wealth:[], children:[], foreign:[], health:[]
   };
- 
+
   const { current, antardashas, prayantardashas } = dasha;
   if (!current || !antardashas) return triggers;
- 
+
   // Check each antardasha for event triggers
   antardashas.forEach(ant => {
     const isMarriage = isActivator(current.lord, MARRIAGE_HOUSES) &&
@@ -1105,7 +1173,7 @@ function getDashaEventTriggers(dasha, planets, lagnaIdx) {
                        isActivator(ant.lord, CHILD_HOUSES);
     const isForeign  = isActivator(current.lord, FOREIGN_HOUSES) &&
                        isActivator(ant.lord, FOREIGN_HOUSES);
- 
+
     if (isMarriage) triggers.marriage.push(
       `${current.lord}–${ant.lord} (${ant.startDate.slice(0,7)} to ${ant.endDate.slice(0,7)})`);
     if (isCareer)   triggers.career.push(
@@ -1117,7 +1185,7 @@ function getDashaEventTriggers(dasha, planets, lagnaIdx) {
     if (isForeign)  triggers.foreign.push(
       `${current.lord}–${ant.lord} (${ant.startDate.slice(0,7)} to ${ant.endDate.slice(0,7)})`);
   });
- 
+
   // Pratyantar level for current antardasha
   if (prayantardashas) {
     prayantardashas.forEach(pr => {
@@ -1133,10 +1201,10 @@ function getDashaEventTriggers(dasha, planets, lagnaIdx) {
       }
     });
   }
- 
+
   return triggers;
 }
- 
+
 // ── Upapada Lord Analysis ──
 function analyzeUpapadaLord(upapadaLagna, planets, lagnaIdx) {
   if (!upapadaLagna) return null;
@@ -1144,11 +1212,11 @@ function analyzeUpapadaLord(upapadaLagna, planets, lagnaIdx) {
   const ulLord = RASI_LORD[ulRasiIdx];
   const ulLordData = planets[ulLord];
   if (!ulLordData) return null;
- 
+
   const ulLordH = ulLordData.house;
   const ulLordStatus = ulLordData.status;
   const afflictions = [];
- 
+
   if (ulLordData.combust) afflictions.push('Combust — spouse karma heavy, marriage suffers');
   if (ulLordData.retrograde) afflictions.push('Retrograde — karmic marriage, past-life connection');
   if ([6,8,12].includes(ulLordH)) afflictions.push(`UL lord in H${ulLordH} (dusthana) — difficult spouse or troubled marriage`);
@@ -1156,11 +1224,11 @@ function analyzeUpapadaLord(upapadaLagna, planets, lagnaIdx) {
   if ((planets.Saturn?.aspects||[]).includes(ulLordH)) afflictions.push('Saturn aspects UL lord — delay, burden in marriage');
   if ((planets.Mars?.aspects||[]).includes(ulLordH)) afflictions.push('Mars aspects UL lord — conflict, aggression in marriage');
   if (Math.abs((planets.Rahu?.sid||0) - ulLordData.sid) < 10) afflictions.push('Rahu conjunct UL lord — unconventional or foreign spouse');
- 
+
   const quality = afflictions.length === 0 ? 'Strong — stable, good quality marriage'
     : afflictions.length <= 2 ? 'Moderate — marriage has challenges but survives'
     : 'Afflicted — significant marriage difficulties, needs remedies';
- 
+
   return {
     upapadaSign: RASI_NAMES[ulRasiIdx],
     lord: ulLord, lordHouse: ulLordH, lordStatus: ulLordStatus,
@@ -1168,28 +1236,28 @@ function analyzeUpapadaLord(upapadaLagna, planets, lagnaIdx) {
     summary: `Upapada in ${RASI_NAMES[ulRasiIdx]}, lord ${ulLord} in H${ulLordH} (${ulLordStatus}) — ${quality}${afflictions.length ? ' | Afflictions: ' + afflictions.join('; ') : ''}`
   };
 }
- 
+
 // ── Navamsa Marriage Engine ──
 function analyzeNavamsaMarriage(navamsa, karakas, lagnaIdx) {
   if (!navamsa) return null;
   const d9Planets = navamsa.planets;
   const d9LagnaIdx = navamsa.lagna.rasiIdx;
- 
+
   // D9 7th house and lord
   const d9SeventhSign = (d9LagnaIdx + 6) % 12;
   const d9SeventhLord = RASI_LORD[d9SeventhSign];
   const d9SeventhLordData = d9Planets[d9SeventhLord];
   const d9SeventhOccupants = Object.entries(d9Planets)
     .filter(([,p]) => p.house === 7).map(([n]) => n);
- 
+
   // D9 Venus
   const d9Venus = d9Planets['Venus'];
   const d9VenusStatus = d9Venus?.status || '';
- 
+
   // Darakaraka in D9
   const darakaraka = karakas?.Darakaraka;
   const d9Dara = darakaraka ? d9Planets[darakaraka] : null;
- 
+
   const analysis = [];
   if (d9VenusStatus.includes('Exalted') || d9VenusStatus.includes('Own'))
     analysis.push('Venus strong in D9 — excellent marriage partner, loving relationship');
@@ -1200,8 +1268,8 @@ function analyzeNavamsaMarriage(navamsa, karakas, lagnaIdx) {
   if ([6,8,12].includes(d9SeventhLordData?.house))
     analysis.push(`D9 7th lord in H${d9SeventhLordData?.house} (dusthana) — marriage faces hidden difficulties`);
   if (d9Dara)
-    analysis.push(`Darakaraka ${darakaraka} in D9 H${d9Dara.house} (${d9Dara.status}) — spouse's core nature revealed`);
- 
+    analysis.push(`Darakaraka ${darakaraka} in D9 H${d9Dara.house} (${d9Dara.status}) — spouse core nature revealed`);
+
   return {
     d9SeventhSign: RASI_NAMES[d9SeventhSign],
     d9SeventhLord,
@@ -1214,13 +1282,13 @@ function analyzeNavamsaMarriage(navamsa, karakas, lagnaIdx) {
     summary: `D9 7th: ${RASI_NAMES[d9SeventhSign]}, lord ${d9SeventhLord} H${d9SeventhLordData?.house||'?'} (${d9SeventhLordData?.status||'?'}) | D9 Venus: ${d9Venus?.rasi} H${d9Venus?.house} ${d9VenusStatus} | ${analysis.join(' | ')}`
   };
 }
- 
+
 // ── Second Marriage Indicators ──
 function getSecondMarriageIndicators(planets, lagnaIdx, upapadaLagna, venusAffliction, divorceIndicators) {
   const H = name => planets[name]?.house || 0;
   const l7 = RASI_LORD[(lagnaIdx+6)%12];
   const indicators = [];
- 
+
   // 7th lord in 8th or 12th
   if ([8,12].includes(H(l7))) indicators.push(`7th lord ${l7} in H${H(l7)} — strong second marriage signal`);
   // 8th house involvement in marriage (8th = second marriage in some traditions)
@@ -1235,7 +1303,7 @@ function getSecondMarriageIndicators(planets, lagnaIdx, upapadaLagna, venusAffli
   if (divorceIndicators?.count >= 3) indicators.push('Multiple divorce indicators present');
   // Rahu in 7th or 9th
   if (H('Rahu')===7||H('Rahu')===9) indicators.push(`Rahu in H${H('Rahu')} — unconventional relationship path, possible second union`);
- 
+
   return {
     count: indicators.length,
     likely: indicators.length >= 3,
@@ -1247,12 +1315,12 @@ function getSecondMarriageIndicators(planets, lagnaIdx, upapadaLagna, venusAffli
         : 'Second marriage not strongly indicated'
   };
 }
- 
+
 // ── Secret Relationship Indicators ──
 function getSecretRelationshipIndicators(planets, lagnaIdx) {
   const H = name => planets[name]?.house || 0;
   const indicators = [];
- 
+
   // Venus in 8th or 12th
   if ([8,12].includes(H('Venus'))) indicators.push(`Venus in H${H('Venus')} — hidden love, secret affairs possible`);
   // Rahu + Venus conjunction
@@ -1266,7 +1334,7 @@ function getSecretRelationshipIndicators(planets, lagnaIdx) {
   if (H('Moon')===12) indicators.push('Moon in H12 — emotional life kept very private, hidden feelings');
   // Mars in 12th
   if (H('Mars')===12) indicators.push('Mars in H12 — secret desires, hidden passion');
- 
+
   return {
     count: indicators.length,
     present: indicators.length >= 2,
@@ -1276,13 +1344,13 @@ function getSecretRelationshipIndicators(planets, lagnaIdx) {
       : 'No strong secret relationship indicators'
   };
 }
- 
+
 // ── Foreign Settlement Engine ──
 function getForeignSettlementIndicators(planets, lagnaIdx, dasha) {
   const H = name => planets[name]?.house || 0;
   const indicators = [];
   let score = 0;
- 
+
   // H12 occupied
   const h12Planets = Object.values(planets).filter(p=>p.house===12);
   if (h12Planets.length > 0) { score+=20; indicators.push(`${h12Planets.length} planet(s) in H12 (foreign lands house)`); }
@@ -1299,20 +1367,20 @@ function getForeignSettlementIndicators(planets, lagnaIdx, dasha) {
   // Dasha trigger for foreign
   if (dasha.current && [H('Rahu'),12,9].includes(planets[dasha.current.lord]?.house))
     { score+=15; indicators.push(`Current ${dasha.current.lord} Dasha activates foreign houses`); }
- 
+
   return {
     score, level: score>=60?'HIGH':score>=30?'MODERATE':'LOW',
     indicators,
     summary: `Foreign settlement ${score>=60?'STRONGLY':score>=30?'MODERATELY':'MILDLY'} indicated (score ${score}/100): ${indicators.join(' | ')}`
   };
 }
- 
+
 // ── Children Timing Engine ──
 function getChildrenTiming(planets, lagnaIdx, dasha, transits) {
   const H = name => planets[name]?.house || 0;
   const l5 = RASI_LORD[(lagnaIdx+4)%12];
   const windows = [];
- 
+
   // Jupiter Dasha or Antardasha triggers children
   dasha.antardashas?.forEach(ant => {
     const isChildActivator = (lord) => {
@@ -1324,7 +1392,7 @@ function getChildrenTiming(planets, lagnaIdx, dasha, transits) {
       windows.push(`${dasha.current?.lord}–${ant.lord} (${ant.startDate.slice(0,7)} to ${ant.endDate.slice(0,7)})`);
     }
   });
- 
+
   // Concerns
   const concerns = [];
   const h5Planets = Object.values(planets).filter(p=>p.house===5);
@@ -1335,14 +1403,14 @@ function getChildrenTiming(planets, lagnaIdx, dasha, transits) {
   const l5Status = planets[l5]?.status||'';
   if (l5Status.includes('Debilitated')||l5Status.includes('Enemy'))
     concerns.push(`5th lord ${l5} weak (${l5Status}) — children may come late or with difficulty`);
- 
+
   return {
     triggerWindows: windows.slice(0,3),
     concerns,
     summary: `Best child conception windows: ${windows.slice(0,3).join(' | ')||'Requires Dasha analysis'}.${concerns.length?' Concerns: '+concerns.join('; '):'No major concerns.'}`
   };
 }
- 
+
 module.exports.getDashaEventTriggers = getDashaEventTriggers;
 module.exports.analyzeUpapadaLord = analyzeUpapadaLord;
 module.exports.analyzeNavamsaMarriage = analyzeNavamsaMarriage;
@@ -1350,37 +1418,37 @@ module.exports.getSecondMarriageIndicators = getSecondMarriageIndicators;
 module.exports.getSecretRelationshipIndicators = getSecretRelationshipIndicators;
 module.exports.getForeignSettlementIndicators = getForeignSettlementIndicators;
 module.exports.getChildrenTiming = getChildrenTiming;
- 
+
 // ═══════════════════════════════════════════════════
 // ADVANCED ENGINE — BATCH 3
 // ═══════════════════════════════════════════════════
- 
+
 // ── Exact Transit Trigger Logic ──
 function getTransitTriggers(planets, lagnaIdx, dasha, transits, karakas, upapadaLagna) {
   const H = name => planets[name]?.house || 0;
   const triggers = { marriage:[], career:[], wealth:[], children:[], health:[], property:[] };
- 
+
   // Get current transit positions
   const now = new Date();
   const jdNow = 2451545.0 + (now - new Date('2000-01-01T12:00:00Z')) / (1000*86400);
   const ayan = getLahiriAyanamsha(jdNow);
   const T = (jdNow - 2451545.0) / 36525;
- 
+
   const Mjup = norm360(20.9 + 3034.906*T);
   const jupTrop = norm360(34.3515 + 3034.9057*T + 5.5549*Math.sin(toRad(Mjup)) - 14.3312);
   const jupTransitRasi = Math.floor(sid(jupTrop,ayan)/30);
- 
+
   const Msat = norm360(317.0207 + 1222.1138*T);
   const satTrop = norm360(50.0775 + 1222.1138*T + 6.3585*Math.sin(toRad(Msat)) - 92.8553);
   const satTransitRasi = Math.floor(sid(satTrop,ayan)/30);
- 
+
   const rahuTrop = norm360(125.044555 - 1934.136261*T);
   const rahuTransitRasi = Math.floor(sid(rahuTrop,ayan)/30);
- 
+
   const jupTransitH = ((jupTransitRasi - lagnaIdx + 12)%12)+1;
   const satTransitH = ((satTransitRasi - lagnaIdx + 12)%12)+1;
   const rahuTransitH = ((rahuTransitRasi - lagnaIdx + 12)%12)+1;
- 
+
   // Natal positions of key planets
   const natVenusRasi   = planets.Venus?.rasiIdx  || 0;
   const natJupRasi     = planets.Jupiter?.rasiIdx || 0;
@@ -1392,7 +1460,7 @@ function getTransitTriggers(planets, lagnaIdx, dasha, transits, karakas, upapada
   const l10            = RASI_LORD[(lagnaIdx+9)%12];
   const natL10Rasi     = planets[l10]?.rasiIdx   || 0;
   const l4             = RASI_LORD[(lagnaIdx+3)%12];
- 
+
   // ── Marriage transit triggers ──
   // Jupiter transiting over natal Venus, 7th lord, UL, or DK
   if (jupTransitRasi === natVenusRasi)  triggers.marriage.push('Transit Jupiter over natal Venus — marriage activation strong');
@@ -1406,29 +1474,29 @@ function getTransitTriggers(planets, lagnaIdx, dasha, transits, karakas, upapada
   if (satTransitAspects.includes(7)) triggers.marriage.push(`Transit Saturn aspects natal H7 — marriage delayed or tested, but serious commitment possible`);
   // Rahu transiting 7th
   if (rahuTransitH === 7) triggers.marriage.push('Transit Rahu in H7 — unconventional marriage, foreign partner possible');
- 
+
   // ── Career transit triggers ──
   if (jupTransitRasi === natL10Rasi)  triggers.career.push(`Transit Jupiter over 10th lord ${l10} — career breakthrough`);
   if (jupTransitH === 10)             triggers.career.push('Transit Jupiter in H10 — promotion, recognition, career expansion');
   if (jupTransitH === 6)              triggers.career.push('Transit Jupiter in H6 — new job, service, competitive success');
   if (satTransitH === 10)             triggers.career.push('Transit Saturn in H10 — career responsibility increases, slow but solid advancement');
   if (satTransitAspects.includes(10)) triggers.career.push('Transit Saturn aspects H10 — career restructuring, demands hard work');
- 
+
   // ── Wealth transit triggers ──
   if (jupTransitH === 2 || jupTransitH === 11) triggers.wealth.push(`Transit Jupiter in H${jupTransitH} — income increase, financial expansion`);
   if (jupTransitH === 9)              triggers.wealth.push('Transit Jupiter in H9 — luck, windfall, fortunate period');
   if (satTransitH === 11)             triggers.wealth.push('Transit Saturn in H11 — gains through discipline, slow wealth build');
   if (rahuTransitH === 11)            triggers.wealth.push('Transit Rahu in H11 — sudden or unexpected gains');
- 
+
   // ── Health transit triggers ──
   if (satTransitH === 1 || satTransitH === 8) triggers.health.push(`Transit Saturn in H${satTransitH} — health pressure, chronic conditions possible, need preventive care`);
   if (satTransitAspects.includes(1))  triggers.health.push('Transit Saturn aspects H1 (self) — health demands attention');
   if (rahuTransitH === 6 || rahuTransitH === 8) triggers.health.push(`Transit Rahu in H${rahuTransitH} — unusual health events, hidden illness possible`);
- 
+
   // ── Property transit triggers ──
   if (jupTransitH === 4)              triggers.property.push('Transit Jupiter in H4 — home purchase, property gain very favored');
   if (satTransitH === 4)              triggers.property.push('Transit Saturn in H4 — property responsibility, home renovation or relocation');
- 
+
   // Double transit check (Jupiter + Saturn both favorable = major event)
   const JFAV = [1,2,4,5,7,9,10,11];
   const SFAV = [3,6,11];
@@ -1436,7 +1504,7 @@ function getTransitTriggers(planets, lagnaIdx, dasha, transits, karakas, upapada
   const jupFromMoon = ((jupTransitRasi - moonRasi + 12)%12)+1;
   const satFromMoon = ((satTransitRasi - moonRasi + 12)%12)+1;
   const doubleTransitActive = JFAV.includes(jupFromMoon) && SFAV.includes(satFromMoon);
- 
+
   return {
     ...triggers,
     currentPositions: {
@@ -1451,36 +1519,36 @@ function getTransitTriggers(planets, lagnaIdx, dasha, transits, karakas, upapada
       .join(' || ')
   };
 }
- 
+
 // ── Refined Marriage Trigger (needs 2 of 4 key activators) ──
 function getRefinedMarriageTrigger(dasha, planets, lagnaIdx, karakas, upapadaLagna) {
   const H = name => planets[name]?.house || 0;
   const l7  = RASI_LORD[(lagnaIdx+6)%12];
   const dk  = karakas?.Darakaraka;
   const ulLord = upapadaLagna ? RASI_LORD[upapadaLagna.rasiIdx] : null;
- 
+
   function activates(lord, targetHouses) {
     if (!lord || !planets[lord]) return false;
     const h = H(lord);
     const aspects = planets[lord]?.aspects || [];
     return targetHouses.some(th => h===th || aspects.includes(th));
   }
- 
+
   const MAR_HOUSES = [2,7,11];
   const windows = [];
- 
+
   dasha.antardashas?.forEach(ant => {
     let score = 0;
     const mLord = dasha.current?.lord;
     const aLord = ant.lord;
- 
+
     if (activates(mLord, MAR_HOUSES) || mLord===l7 || mLord===dk || mLord===ulLord || mLord==='Venus') score++;
     if (activates(aLord, MAR_HOUSES) || aLord===l7 || aLord===dk || aLord===ulLord || aLord==='Venus') score++;
     // Jupiter always supports marriage
     if (aLord==='Jupiter'||mLord==='Jupiter') score++;
     // 7th lord or DK as antardasha
     if (aLord===l7||aLord===dk) score++;
- 
+
     if (score >= 2) {
       windows.push({
         period: `${mLord}–${aLord}`,
@@ -1497,7 +1565,7 @@ function getRefinedMarriageTrigger(dasha, planets, lagnaIdx, karakas, upapadaLag
       });
     }
   });
- 
+
   windows.sort((a,b)=>b.score-a.score);
   return {
     windows: windows.slice(0,3),
@@ -1507,7 +1575,7 @@ function getRefinedMarriageTrigger(dasha, planets, lagnaIdx, karakas, upapadaLag
       : 'No strong marriage dasha trigger in current Mahadasha — check next Mahadasha'
   };
 }
- 
+
 // ── Health Engine ──
 function getHealthEngine(planets, lagnaIdx, dasha) {
   const H = name => planets[name]?.house || 0;
@@ -1515,34 +1583,34 @@ function getHealthEngine(planets, lagnaIdx, dasha) {
   const l6 = RASI_LORD[(lagnaIdx+5)%12];
   const l8 = RASI_LORD[(lagnaIdx+7)%12];
   const l12= RASI_LORD[(lagnaIdx+11)%12];
- 
+
   const concerns = [];
   const dangerPeriods = [];
- 
+
   // Acute disease (6th house)
   const h6Planets = Object.values(planets).filter(p=>p.house===6);
   if (h6Planets.length>0) concerns.push(`Planets in H6 — tendency toward infections, enemies of health, immune challenges`);
   if ([6,8,12].includes(H(l1))) concerns.push(`Lagna lord ${l1} in H${H(l1)} — fundamental vitality weakened`);
- 
+
   // Chronic/hidden disease (8th house)
   const h8Planets = Object.values(planets).filter(p=>p.house===8);
   if (h8Planets.length>0) concerns.push(`Planets in H8 — chronic conditions, sudden health events, surgery possible`);
- 
+
   // Hospitalization (12th house)
   const h12Planets = Object.values(planets).filter(p=>p.house===12);
   if (h12Planets.length>0) concerns.push(`Planets in H12 — hospitalization or long illness periods in life`);
- 
+
   // Saturn afflictions
   if ((planets.Saturn?.aspects||[]).includes(1)) concerns.push('Saturn aspects H1 — chronic stress, bones/joints/teeth vulnerable');
   if (H('Saturn')===6||H('Saturn')===8) concerns.push(`Saturn in H${H('Saturn')} — chronic disease tendency, slow healing`);
- 
+
   // Mars afflictions  
   if ((planets.Mars?.aspects||[]).includes(1)) concerns.push('Mars aspects H1 — accident risk, inflammatory conditions, blood issues');
   if (H('Mars')===6||H('Mars')===8) concerns.push(`Mars in H${H('Mars')} — injury, surgery, fever tendency`);
- 
+
   // Rahu in health houses
   if ([1,6,8].includes(H('Rahu'))) concerns.push(`Rahu in H${H('Rahu')} — mysterious ailments, unusual diagnoses, anxiety disorders`);
- 
+
   // Dasha danger periods for health
   dasha.antardashas?.forEach(ant => {
     const mLord = dasha.current?.lord;
@@ -1553,7 +1621,7 @@ function getHealthEngine(planets, lagnaIdx, dasha) {
     if ((aLord==='Saturn'||aLord==='Rahu'||aLord==='Ketu') && [6,8,12].includes(mH))
       dangerPeriods.push(`${mLord}–${aLord} (${ant.startDate.slice(0,7)}–${ant.endDate.slice(0,7)}) — malefic Bhukti in health-active Mahadasha`);
   });
- 
+
   // Body parts vulnerable (from Lagna sign)
   const LAGNA_BODY = {
     Mesha:'head, brain, blood pressure', Rishabha:'throat, thyroid, neck',
@@ -1565,7 +1633,7 @@ function getHealthEngine(planets, lagnaIdx, dasha) {
   };
   const lagnaRasi = RASI_NAMES[lagnaIdx];
   const vulnerableBodyParts = LAGNA_BODY[lagnaRasi] || 'general constitution';
- 
+
   return {
     concerns, dangerPeriods: dangerPeriods.slice(0,4),
     vulnerableBodyParts,
@@ -1576,7 +1644,7 @@ function getHealthEngine(planets, lagnaIdx, dasha) {
     ].filter(Boolean).join(' || ')
   };
 }
- 
+
 // ── Wealth Timing Engine ──
 function getWealthTimingEngine(planets, lagnaIdx, dasha, transits) {
   const H = name => planets[name]?.house || 0;
@@ -1584,12 +1652,12 @@ function getWealthTimingEngine(planets, lagnaIdx, dasha, transits) {
   const l11 = RASI_LORD[(lagnaIdx+10)%12];
   const WEALTH_HOUSES = [2,9,11];
   const windows = [];
- 
+
   dasha.antardashas?.forEach(ant => {
     const mLord = dasha.current?.lord;
     const aLord = ant.lord;
     let score = 0;
- 
+
     // Check if either activates wealth houses
     const mActivates = WEALTH_HOUSES.some(h=>H(mLord)===h||(planets[mLord]?.aspects||[]).includes(h));
     const aActivates = WEALTH_HOUSES.some(h=>H(aLord)===h||(planets[aLord]?.aspects||[]).includes(h));
@@ -1598,14 +1666,14 @@ function getWealthTimingEngine(planets, lagnaIdx, dasha, transits) {
     if (aLord===l2||mLord===l2) { score++; }
     if (aLord===l11||mLord===l11) { score++; }
     if (aLord==='Jupiter'||mLord==='Jupiter') score++;
- 
+
     if (score >= 2) windows.push({
       period:`${mLord}–${aLord}`,
       dates:`${ant.startDate.slice(0,7)} to ${ant.endDate.slice(0,7)}`,
       score, strength: score>=4?'PEAK':score>=3?'HIGH':'MODERATE'
     });
   });
- 
+
   // Dhana yogas check
   const dhanaYogas = [];
   if ((planets.Jupiter?.aspects||[]).includes(2)||(planets.Jupiter?.aspects||[]).includes(11)||H('Jupiter')===2||H('Jupiter')===11)
@@ -1614,7 +1682,7 @@ function getWealthTimingEngine(planets, lagnaIdx, dasha, transits) {
     dhanaYogas.push('Venus in wealth house — income through arts, beauty, luxury');
   if (H(l2)===11||H(l11)===2)
     dhanaYogas.push(`2nd lord (${l2}) and 11th lord (${l11}) exchange — Dhana Yoga`);
- 
+
   windows.sort((a,b)=>b.score-a.score);
   return {
     windows: windows.slice(0,4),
@@ -1625,40 +1693,40 @@ function getWealthTimingEngine(planets, lagnaIdx, dasha, transits) {
     ].filter(Boolean).join(' | ')
   };
 }
- 
+
 // ── Property Engine ──
 function getPropertyEngine(planets, lagnaIdx, dasha) {
   const H = name => planets[name]?.house || 0;
   const l4 = RASI_LORD[(lagnaIdx+3)%12];
   const PROP_HOUSES = [4,12];
   const windows = [];
- 
+
   dasha.antardashas?.forEach(ant => {
     const mLord = dasha.current?.lord;
     const aLord = ant.lord;
     let score = 0;
- 
+
     if (H(mLord)===4||(planets[mLord]?.aspects||[]).includes(4)) score++;
     if (H(aLord)===4||(planets[aLord]?.aspects||[]).includes(4)) score++;
     if (mLord===l4||aLord===l4) score+=2;
     if (mLord==='Mars'||aLord==='Mars') score++; // Mars = property karaka
     if (mLord==='Moon'||aLord==='Moon') score++; // Moon = home karaka
     if (mLord==='Saturn'||aLord==='Saturn') score++; // Saturn = land karaka
- 
+
     if (score>=2) windows.push({
       period:`${mLord}–${aLord}`,
       dates:`${ant.startDate.slice(0,7)} to ${ant.endDate.slice(0,7)}`,
       score, strength: score>=4?'PEAK':score>=3?'HIGH':'MODERATE'
     });
   });
- 
+
   // Property indicators in natal chart
   const indicators = [];
   if (H(l4)===4)   indicators.push(`4th lord ${l4} in own house — own home strongly indicated`);
   if ([1,4,7,10].includes(H('Mars'))) indicators.push(`Mars in Kendra — property acquisition supported`);
   if ((planets.Jupiter?.aspects||[]).includes(4)) indicators.push('Jupiter aspects H4 — blessed home, good property');
   if ([6,8,12].includes(H(l4))) indicators.push(`4th lord ${l4} in H${H(l4)} — property may be delayed or involve debt`);
- 
+
   windows.sort((a,b)=>b.score-a.score);
   return {
     windows: windows.slice(0,3), indicators,
@@ -1668,7 +1736,7 @@ function getPropertyEngine(planets, lagnaIdx, dasha) {
     ].filter(Boolean).join(' | ')
   };
 }
- 
+
 // ── Argala Engine ──
 function getArgala(planets, lagnaIdx, targetHouse) {
   // Argala = hidden influence on a house
@@ -1677,28 +1745,28 @@ function getArgala(planets, lagnaIdx, targetHouse) {
   const norm = h => ((h-1+12)%12)+1;
   const argalaHouses = [norm(targetHouse+1), norm(targetHouse+3), norm(targetHouse+10)];
   const obstructHouses= [norm(targetHouse+11), norm(targetHouse+9), norm(targetHouse+2)];
- 
+
   const argalaOccupants = [], obstructOccupants = [];
   for (const [name, p] of Object.entries(planets)) {
     if (argalaHouses.includes(p.house))    argalaOccupants.push(`${name} in H${p.house} (${p.status.split(' ')[0]})`);
     if (obstructHouses.includes(p.house))  obstructOccupants.push(`${name} in H${p.house}`);
   }
- 
+
   const netArgala = argalaOccupants.length > obstructOccupants.length ? 'positive' : 
                     argalaOccupants.length < obstructOccupants.length ? 'obstructed' : 'balanced';
- 
+
   return {
     targetHouse, argalaHouses, obstructHouses,
     argalaOccupants, obstructOccupants, netArgala,
     summary: `Argala on H${targetHouse}: ${netArgala} — Supporters: ${argalaOccupants.join(', ')||'none'} | Obstructors: ${obstructOccupants.join(', ')||'none'}`
   };
 }
- 
- 
+
+
 // ═══════════════════════════════════════════════════
 // SCORING ENGINES
 // ═══════════════════════════════════════════════════
- 
+
 // ── Weighted Planet Ranking ──
 function getWeightedPlanetRanking(planets, yogas) {
   const ranked = [];
@@ -1724,7 +1792,7 @@ function getWeightedPlanetRanking(planets, yogas) {
     all: ranked
   };
 }
- 
+
 // ── Contradiction Detector ──
 function detectContradictions(planets, yogas) {
   const contradictions = [];
@@ -1751,12 +1819,12 @@ function detectContradictions(planets, yogas) {
   }
   return contradictions;
 }
- 
+
 // ── Shock Fact Guardrail (min 3 indicators) ──
 function getVerifiedShockFacts(psychProfile, planets, lagnaIdx, yogas) {
   const H = name => planets[name]?.house || 0;
   const verified = [];
- 
+
   // Abandonment wound — need Moon affliction + one more
   const moonH = H('Moon');
   const moonAffBysat = (planets.Saturn?.aspects||[]).includes(moonH);
@@ -1771,7 +1839,7 @@ function getVerifiedShockFacts(psychProfile, planets, lagnaIdx, yogas) {
     statement: `There is a deep-seated pattern of emotional withdrawal and feeling unsupported — not imagined, but wired into the chart through Moon placement in H${moonH}${moonAffBysat?', Saturn aspect on it':''}.`,
     count: abandonCount
   });
- 
+
   // Father wound
   const sunH = H('Sun');
   const sunInDust = [6,8,12].includes(sunH);
@@ -1785,7 +1853,7 @@ function getVerifiedShockFacts(psychProfile, planets, lagnaIdx, yogas) {
     statement: `The relationship with father or authority figures has been complicated — either distant, controlling, or absent in key moments. Sun in H${sunH}${sunDebil?' debilitated':''}${satAspectsSun?', aspected by Saturn':''} confirms this pattern.`,
     count: fatherCount
   });
- 
+
   // Obsessive love
   const venusH = H('Venus');
   const rahuNearVenus = Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0)) < 10;
@@ -1798,7 +1866,7 @@ function getVerifiedShockFacts(psychProfile, planets, lagnaIdx, yogas) {
     statement: `Love and attraction run intense and sometimes obsessive in this chart — ${rahuNearVenus?'Rahu conjunct Venus amplifies desire beyond comfort':''}${marsAspectsVenus?', Mars aspects Venus adding passion and possessiveness':''}. This person loves deeply but struggles with attachment.`,
     count: obsessCount
   });
- 
+
   // Self-sabotage
   const ketuH = H('Ketu');
   const lagnaLord = RASI_LORD[lagnaIdx];
@@ -1812,31 +1880,31 @@ function getVerifiedShockFacts(psychProfile, planets, lagnaIdx, yogas) {
     statement: `There is a pattern of stepping back from success just before it arrives — Ketu in H${ketuH}${lagnaLordInDust?`, lagna lord in H${planets[lagnaLord]?.house} (dusthana)`:''}. This is karmic and requires conscious awareness to override.`,
     count: sabotageCount
   });
- 
+
   return verified;
 }
- 
+
 // ── Marriage Stability Scores ──
 function getMarriageScores(planets, lagnaIdx, yogas, venusAffliction, divorceIndicators, navamsaMarriage) {
   let emotional = 50, physical = 50, stability = 50, karmic = 50;
- 
+
   const H = name => planets[name]?.house || 0;
   const l7 = RASI_LORD[(lagnaIdx+6)%12];
   const l7Status = planets[l7]?.status || '';
- 
+
   // Emotional (Moon, Venus, 7th house atmosphere)
   if (planets.Moon?.status.includes('Exalted')||planets.Moon?.status.includes('Own')) emotional += 15;
   if ([6,8,12].includes(H('Moon'))) emotional -= 15;
   if ((planets.Saturn?.aspects||[]).includes(H('Moon'))) emotional -= 10;
   if (planets.Venus?.status.includes('Exalted')||planets.Venus?.status.includes('Own')) emotional += 15;
   emotional = Math.max(0, Math.min(100, emotional));
- 
+
   // Physical (Venus, Mars, 8th house)
   physical -= (venusAffliction?.score || 0) * 0.3;
   if (H('Mars') === 7 && !yogas.some(y=>y.name.includes('Mangal')&&y.nullified)) physical -= 15;
   if (planets.Venus?.status.includes('Exalted')) physical += 20;
   physical = Math.max(0, Math.min(100, physical));
- 
+
   // Stability (7th lord, Jupiter, Saturn in 7th own sign)
   if (l7Status.includes('Exalted')||l7Status.includes('Own')) stability += 20;
   if ([6,8,12].includes(H(l7))) stability -= 20;
@@ -1845,14 +1913,14 @@ function getMarriageScores(planets, lagnaIdx, yogas, venusAffliction, divorceInd
   if (navamsaMarriage?.analysis?.some(a=>a.includes('strong'))) stability += 10;
   if (navamsaMarriage?.analysis?.some(a=>a.includes('difficult'))) stability -= 10;
   stability = Math.max(0, Math.min(100, stability));
- 
+
   // Karmic (UL, Darakaraka, D9)
   if (navamsaMarriage?.d9Venus?.status.includes('Exalted')) karmic += 20;
   if (navamsaMarriage?.d9Venus?.status.includes('Debilitated')) karmic -= 20;
   if (yogas.some(y=>y.name.includes('Hamsa'))) karmic += 15;
   if (yogas.some(y=>y.name.includes('Love Marriage'))) karmic += 10;
   karmic = Math.max(0, Math.min(100, karmic));
- 
+
   const overall = Math.round(emotional*0.3 + physical*0.2 + stability*0.3 + karmic*0.2);
   const delay = Math.max(0, Math.min(100,
     (divorceIndicators?.count||0)*10 +
@@ -1865,7 +1933,7 @@ function getMarriageScores(planets, lagnaIdx, yogas, venusAffliction, divorceInd
     (H('Mars')===7 ? 20 : 0) +
     ((planets.Saturn?.aspects||[]).includes(7) ? 15 : 0)
   ));
- 
+
   return {
     emotional: Math.round(emotional),
     physical:  Math.round(physical),
@@ -1875,27 +1943,27 @@ function getMarriageScores(planets, lagnaIdx, yogas, venusAffliction, divorceInd
     summary: `Marriage Stability ${overall}/100 | Emotional ${Math.round(emotional)}% | Physical ${Math.round(physical)}% | Stability ${Math.round(stability)}% | Karmic ${Math.round(karmic)}% | Delay risk ${Math.round(delay)}% | Conflict risk ${Math.round(conflict)}%`
   };
 }
- 
+
 module.exports.getWeightedPlanetRanking = getWeightedPlanetRanking;
 module.exports.detectContradictions = detectContradictions;
 module.exports.getVerifiedShockFacts = getVerifiedShockFacts;
 module.exports.getMarriageScores = getMarriageScores;
- 
+
 module.exports.getTransitTriggers = getTransitTriggers;
 module.exports.getRefinedMarriageTrigger = getRefinedMarriageTrigger;
 module.exports.getHealthEngine = getHealthEngine;
 module.exports.getWealthTimingEngine = getWealthTimingEngine;
 module.exports.getPropertyEngine = getPropertyEngine;
 module.exports.getArgala = getArgala;
- 
+
 // ═══════════════════════════════════════════════════
 // WEIGHTED SCORING ENGINE — BATCH 4
 // ═══════════════════════════════════════════════════
- 
+
 // ── Weighted indicator system ──
 // Each factor has a weight. Final score = sum of weights.
 // Prediction only made if minimum threshold met.
- 
+
 const WEIGHTS = {
   // Marriage factors
   marriage: {
@@ -1956,7 +2024,7 @@ const WEIGHTS = {
     h6_empty:           { weight: 4,  desc: 'H6 empty — less chronic illness tendency' },
   }
 };
- 
+
 function computeWeightedScore(factors, weightTable) {
   let total = 0;
   const applied = [];
@@ -1972,7 +2040,7 @@ function computeWeightedScore(factors, weightTable) {
   const normalized = Math.round(((total - minPossible) / (maxPossible - minPossible)) * 100);
   return { raw: total, normalized: Math.max(0,Math.min(100,normalized)), applied };
 }
- 
+
 function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAnalysis, divorceIndicators) {
   const H = name => planets[name]?.house || 0;
   const ST = name => planets[name]?.status || '';
@@ -1980,14 +2048,14 @@ function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAna
   const l10 = RASI_LORD[(lagnaIdx+9)%12];
   const l2  = RASI_LORD[(lagnaIdx+1)%12];
   const l11 = RASI_LORD[(lagnaIdx+10)%12];
- 
+
   // Marriage factors
   const mangalActive = yogas.some(y=>y.name.includes('Mangal Dosha — ACTIVE'));
   const d9VenusStatus = navamsa?.planets?.Venus?.status || '';
   const d97Sign = (navamsa?.lagna?.rasiIdx+6)%12;
   const d97Lord = RASI_LORD[d97Sign];
   const d97LordStatus = navamsa?.planets?.[d97Lord]?.status || '';
- 
+
   const marriageFactors = {
     l7_in_kendra:      [1,4,7,10].includes(H(l7)),
     l7_in_trikona:     [1,5,9].includes(H(l7)),
@@ -2011,7 +2079,7 @@ function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAna
     love_yoga:         yogas.some(y=>y.name.includes('Love Marriage')),
     gajakesari:        yogas.some(y=>y.name.includes('Gajakesari')),
   };
- 
+
   // Career factors
   const careerFactors = {
     l10_in_kendra:     [1,4,7,10].includes(H(l10)),
@@ -2026,7 +2094,7 @@ function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAna
     l10_in_dusthana:   [6,8,12].includes(H(l10)),
     saturn_in_10:      H('Saturn')===10,
   };
- 
+
   // Wealth factors
   const wealthFactors = {
     jupiter_exalted:   ST('Jupiter').includes('Exalted'),
@@ -2037,7 +2105,7 @@ function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAna
     l2_debilitated:    ST(l2).includes('Debilitated'),
     ketu_in_11:        H('Ketu')===11,
   };
- 
+
   // Health factors
   const healthFactors = {
     lagna_lord_strong: ST(RASI_LORD[lagnaIdx]).includes('Exalted')||ST(RASI_LORD[lagnaIdx]).includes('Own'),
@@ -2048,19 +2116,19 @@ function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAna
     moon_h8_h12:       [8,12].includes(H('Moon')),
     h6_empty:          Object.values(planets).every(p=>p.house!==6),
   };
- 
+
   const marriage = computeWeightedScore(marriageFactors, WEIGHTS.marriage);
   const career   = computeWeightedScore(careerFactors,  WEIGHTS.career);
   const wealth   = computeWeightedScore(wealthFactors,  WEIGHTS.wealth);
   const health   = computeWeightedScore(healthFactors,  WEIGHTS.health);
- 
+
   // D1 vs D9 weighted marriage (D1=40%, D9=40%, UL/A7=20%)
   const d1MarriageBase = marriage.normalized;
   const d9Score = (marriageFactors.d9_venus_strong?80:marriageFactors.d9_venus_weak?20:50)*0.4 +
                   (marriageFactors.d9_7lord_strong?80:marriageFactors.d9_7lord_weak?20:50)*0.6;
   const ulScore = (marriageFactors.ul_strong?80:marriageFactors.ul_afflicted?20:50);
   const marriageBlended = Math.round(d1MarriageBase*0.4 + d9Score*0.4 + ulScore*0.2);
- 
+
   return {
     marriage: { ...marriage, blended: marriageBlended,
       summary: `Marriage (blended D1+D9+UL): ${marriageBlended}/100 | D1: ${d1MarriageBase}% | D9: ${Math.round(d9Score)}% | UL: ${ulScore}%` },
@@ -2073,13 +2141,13 @@ function getFullWeightedScores(planets, lagnaIdx, yogas, navamsa, upapadaLordAna
       .filter(f=>f.weight<=-6).slice(0,5).map(f=>f.desc),
   };
 }
- 
+
 // ── Triple confirmation for major predictions ──
 function getTripleConfirmation(planets, lagnaIdx, dasha, transits, yogas, weightedScores) {
   const H = name => planets[name]?.house || 0;
   const l7 = RASI_LORD[(lagnaIdx+6)%12];
   const confirmations = {};
- 
+
   // Marriage confirmation (need 3 of: Dasha active, Transit active, House activated, Score high)
   const marriageDashaActive = (dasha.dashaEventTriggers?.marriage?.length > 0);
   const marriageTransitActive = (transits?.marriage?.length > 0);
@@ -2098,7 +2166,7 @@ function getTripleConfirmation(planets, lagnaIdx, dasha, transits, yogas, weight
       marriageScoreHigh ? `Score ${weightedScores?.marriage?.blended}/100` : '',
     ].filter(Boolean)
   };
- 
+
   // Career confirmation
   const careerDashaActive = (dasha.dashaEventTriggers?.career?.length > 0);
   const careerTransitActive = (transits?.career?.length > 0);
@@ -2112,7 +2180,7 @@ function getTripleConfirmation(planets, lagnaIdx, dasha, transits, yogas, weight
     level: careerCount >= 4 ? 'VERY HIGH' : careerCount >= 3 ? 'HIGH' : careerCount >= 2 ? 'MODERATE' : 'LOW',
     factors: [careerDashaActive?'Dasha':'',careerTransitActive?'Transit':'',careerHouseActive?'H10 active':'',careerScoreHigh?'Score high':''].filter(Boolean)
   };
- 
+
   // Wealth confirmation
   const wealthDashaActive = (dasha.dashaEventTriggers?.wealth?.length > 0);
   const wealthTransitActive = (transits?.wealth?.length > 0);
@@ -2126,7 +2194,7 @@ function getTripleConfirmation(planets, lagnaIdx, dasha, transits, yogas, weight
     level: wealthCount >= 3 ? 'HIGH' : wealthCount >= 2 ? 'MODERATE' : 'LOW',
     factors: [wealthDashaActive?'Dasha':'',wealthTransitActive?'Transit':'',wealthHouseActive?'House':'',wealthScoreHigh?'Score high':''].filter(Boolean)
   };
- 
+
   return {
     confirmations,
     summary: Object.entries(confirmations)
@@ -2134,14 +2202,14 @@ function getTripleConfirmation(planets, lagnaIdx, dasha, transits, yogas, weight
       .join(' | ')
   };
 }
- 
+
 module.exports.getFullWeightedScores = getFullWeightedScores;
 module.exports.getTripleConfirmation = getTripleConfirmation;
- 
+
 // ═══════════════════════════════════════════════════
 // COMPREHENSIVE MATCH SCORING ENGINE
 // ═══════════════════════════════════════════════════
- 
+
 const RASI_ELEMENT = {
   Mesha:'Fire',Simha:'Fire',Dhanu:'Fire',
   Rishabha:'Earth',Kanya:'Earth',Makara:'Earth',
@@ -2153,7 +2221,7 @@ const RASI_MODALITY = {
   Rishabha:'Fixed',Simha:'Fixed',Vrischika:'Fixed',Kumbha:'Fixed',
   Mithuna:'Dual',Kanya:'Dual',Dhanu:'Dual',Meena:'Dual'
 };
- 
+
 // Element compatibility matrix
 function getElementCompat(e1, e2) {
   if (e1===e2) return { score:90, desc:`Same element (${e1}) — natural harmony and understanding` };
@@ -2169,7 +2237,7 @@ function getElementCompat(e1, e2) {
   const sc = compat[key]||55;
   return { score:sc, desc:`${e1}+${e2} elements — ${sc>=75?'compatible':sc>=60?'workable':'challenging'}` };
 }
- 
+
 // Planet friendship for lord compatibility
 function arePlanetFriends(p1, p2) {
   return PLANET_FRIENDS[p1]?.includes(p2) || PLANET_FRIENDS[p2]?.includes(p1);
@@ -2177,7 +2245,7 @@ function arePlanetFriends(p1, p2) {
 function arePlanetEnemies(p1, p2) {
   return PLANET_ENEMIES[p1]?.includes(p2) || PLANET_ENEMIES[p2]?.includes(p1);
 }
- 
+
 // Cross-chart aspect check
 function crossAspects(p1Sid, p2House, p2Sid, p1Name) {
   const orb = 10; // degrees
@@ -2190,19 +2258,19 @@ function crossAspects(p1Sid, p2House, p2Sid, p1Name) {
   if (Math.abs(normDiff-90)  < orb) return { type:'square', strength: Math.round((orb-Math.abs(normDiff-90))/orb*100) };
   return null;
 }
- 
+
 function computeMatchScore(chart1, chart2, matchResult) {
   const p1 = chart1.planets, p2 = chart2.planets;
   const l1 = chart1.lagna, l2 = chart2.lagna;
   const scores = {};
- 
+
   // ── LAYER 1: CORE COMPATIBILITY (30%) ──
- 
+
   // 1a. Lagna element compatibility (15%)
   const e1 = RASI_ELEMENT[l1.rasi]||'Air', e2 = RASI_ELEMENT[l2.rasi]||'Air';
   const elemComp = getElementCompat(e1, e2);
   scores.lagnaCompat = { score: elemComp.score, weight:0.15, desc: elemComp.desc };
- 
+
   // 1b. Moon sign relationship (15%)
   const moon1Rasi = chart1.rasi.index, moon2Rasi = chart2.rasi.index;
   const moonDist = ((moon2Rasi - moon1Rasi + 12)%12)+1;
@@ -2214,9 +2282,9 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score: Math.min(100,moonScore+moonLordBonus), weight:0.15,
     desc:`Moon signs ${RASI_NAMES[moon1Rasi]}-${RASI_NAMES[moon2Rasi]} (${moonDist}th relation) — lords ${moon1Lord}/${moon2Lord} ${arePlanetFriends(moon1Lord,moon2Lord)?'friends':'neutral/enemies'}`
   };
- 
+
   // ── LAYER 2: CHEMISTRY (20%) ──
- 
+
   // 2a. Venus-Mars cross analysis (10%)
   const vm1 = crossAspects(p1.Venus?.sid||0, p2.Mars?.house||0, p2.Mars?.sid||0, 'Venus');
   const vm2 = crossAspects(p2.Venus?.sid||0, p1.Mars?.house||0, p1.Mars?.sid||0, 'Venus');
@@ -2229,7 +2297,7 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:chemScore, weight:0.10,
     desc:`Venus-Mars cross: ${vm1?`P1 Venus ${vm1.type} P2 Mars`:'no major aspect'}, ${vm2?`P2 Venus ${vm2.type} P1 Mars`:'no major aspect'} — ${chemScore>=75?'strong attraction':chemScore>=60?'moderate chemistry':'weak chemistry'}`
   };
- 
+
   // 2b. Moon-Venus compatibility (10%)
   const mv1 = crossAspects(p1.Moon?.sid||0, p2.Venus?.house||0, p2.Venus?.sid||0, 'Moon');
   const mv2 = crossAspects(p2.Moon?.sid||0, p1.Venus?.house||0, p1.Venus?.sid||0, 'Moon');
@@ -2241,9 +2309,9 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:mvScore, weight:0.10,
     desc:`Moon-Venus sync: ${mvScore>=75?'emotional-romantic harmony':mvScore>=60?'workable sync':'emotional disconnect possible'}`
   };
- 
+
   // ── LAYER 3: MARRIAGE STABILITY (25%) ──
- 
+
   // 3a. 7th house cross match (10%)
   const h7lord1 = RASI_LORD[(l1.rasiIdx+6)%12], h7lord2 = RASI_LORD[(l2.rasiIdx+6)%12];
   const h7lord1Status = p1[h7lord1]?.status||'', h7lord2Status = p2[h7lord2]?.status||'';
@@ -2257,7 +2325,7 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:Math.min(100,h7CrossScore), weight:0.10,
     desc:`7th lords: P1 ${h7lord1} H${p1[h7lord1]?.house} (${h7lord1Status.split(' ')[0]}) + P2 ${h7lord2} H${p2[h7lord2]?.house} (${h7lord2Status.split(' ')[0]}) — lords ${h7LordFriends?'are friends':'not friends'}`
   };
- 
+
   // 3b. Upapada compatibility (10%)
   const ul1 = chart1.upapadaLagna, ul2 = chart2.upapadaLagna;
   let ulScore = 60;
@@ -2275,7 +2343,7 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:Math.min(100,Math.max(0,ulScore)), weight:0.10,
     desc:`Upapada: P1 ${ul1?.rasi||'N/A'} (${chart1.upapadaLordAnalysis?.quality?.split('—')[0]||'?'}) vs P2 ${ul2?.rasi||'N/A'} (${chart2.upapadaLordAnalysis?.quality?.split('—')[0]||'?'})`
   };
- 
+
   // 3c. A7 compatibility (5%)
   const a7_1 = chart1.a7, a7_2 = chart2.a7;
   let a7Score = 60;
@@ -2287,9 +2355,9 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:a7Score, weight:0.05,
     desc:`A7 (relationship image): P1 ${a7_1?.rasi||'?'} vs P2 ${a7_2?.rasi||'?'}`
   };
- 
+
   // ── LAYER 4: KARMIC ALIGNMENT (15%) ──
- 
+
   // 4a. Darakaraka cross-match (10%)
   const dk1 = chart1.karakas?.Darakaraka, dk2 = chart2.karakas?.Darakaraka;
   let dkScore = 60;
@@ -2305,7 +2373,7 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:Math.min(100,dkScore), weight:0.10,
     desc:`Darakaraka: P1 ${dk1||'?'} (H${p1[dk1]?.house||'?'}) vs P2 ${dk2||'?'} (H${p2[dk2]?.house||'?'}) — ${arePlanetFriends(dk1||'',dk2||'')?'friends, good karmic bond':arePlanetEnemies(dk1||'',dk2||'')?'enemies, karmic tension':'neutral'}`
   };
- 
+
   // 4b. Atmakaraka compatibility (5%)
   const ak1 = chart1.karakas?.Atmakaraka, ak2 = chart2.karakas?.Atmakaraka;
   const akFriends = ak1&&ak2?arePlanetFriends(ak1,ak2):false;
@@ -2314,9 +2382,9 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:akFriends?80:akEnemies?35:60, weight:0.05,
     desc:`Atmakaraka: P1 ${ak1||'?'} vs P2 ${ak2||'?'} — soul-level ${akFriends?'resonance':akEnemies?'friction':'neutral'}`
   };
- 
+
   // ── LAYER 5: NAVAMSA (15%) ──
- 
+
   // 5a. D9 Lagna compatibility (5%)
   const d9l1 = chart1.navamsa?.lagna?.rasiIdx||0, d9l2 = chart2.navamsa?.lagna?.rasiIdx||0;
   const d9LagnaDist = ((d9l2-d9l1+12)%12)+1;
@@ -2325,7 +2393,7 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:d9LagnaScore, weight:0.05,
     desc:`D9 Lagna: P1 ${RASI_NAMES[d9l1]} vs P2 ${RASI_NAMES[d9l2]} (${d9LagnaDist}th relation)`
   };
- 
+
   // 5b. D9 Venus comparison (10%)
   const d9v1 = chart1.navamsa?.planets?.Venus, d9v2 = chart2.navamsa?.planets?.Venus;
   const d9v1Score = d9v1?.status.includes('Exalted')?90:d9v1?.status.includes('Own')?80:d9v1?.status.includes('Debilitated')?20:55;
@@ -2335,33 +2403,33 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:d9VenusScore, weight:0.10,
     desc:`D9 Venus: P1 ${d9v1?.rasi||'?'} H${d9v1?.house||'?'} (${d9v1?.status?.split(' ')[0]||'?'}) | P2 ${d9v2?.rasi||'?'} H${d9v2?.house||'?'} (${d9v2?.status?.split(' ')[0]||'?'})`
   };
- 
+
   // ── LAYER 6: RISK DETECTION (10%) ──
- 
+
   // Mangal cross-match
   const m1Active = chart1.yogas?.some(y=>y.name.includes('Mangal Dosha — ACTIVE'));
   const m2Active = chart2.yogas?.some(y=>y.name.includes('Mangal Dosha — ACTIVE'));
   const mangalOk = (m1Active&&m2Active)||(!m1Active&&!m2Active);
   const mangalRisk = m1Active!==m2Active ? 25 : 0;
- 
+
   // Divorce indicator overlap
   const di1 = chart1.divorceIndicators?.count||0, di2 = chart2.divorceIndicators?.count||0;
   const divorceRisk = Math.min(100, (di1+di2)*10);
- 
+
   // Venus affliction mismatch
   const va1 = chart1.venusAffliction?.score||0, va2 = chart2.venusAffliction?.score||0;
   const venusRisk = Math.round((va1+va2)/2);
- 
+
   // Saturn-Mars cross clash
   const satMarsClash = (chart1.planets.Saturn?.aspects||[]).includes(chart2.planets.Mars?.house) ||
     (chart2.planets.Saturn?.aspects||[]).includes(chart1.planets.Mars?.house);
- 
+
   const riskScore = Math.max(0, 100 - mangalRisk - divorceRisk*0.3 - venusRisk*0.2 - (satMarsClash?10:0));
   scores.riskFactors = {
     score:Math.round(riskScore), weight:0.10,
     desc:`Risk: Mangal ${mangalOk?'matched':'MISMATCH'} | Divorce indicators ${di1+di2} total | Venus affliction avg ${Math.round((va1+va2)/2)}/100 | Saturn-Mars clash: ${satMarsClash?'YES':'no'}`
   };
- 
+
   // ── LAYER 7: TIMING ALIGNMENT (5%) ──
   const mw1 = chart1.refinedMarriage?.windows||[], mw2 = chart2.refinedMarriage?.windows||[];
   // Check overlap in marriage windows
@@ -2378,18 +2446,18 @@ function computeMatchScore(chart1, chart2, matchResult) {
     score:timingOverlap?85:50, weight:0.05,
     desc:`Marriage timing overlap: ${timingOverlap?'YES — windows align, good for joint marriage':'Windows may not align — timing needs careful planning'}`
   };
- 
+
   // ── PORUTHAM INTEGRATION (included in overall) ──
   const porScore = matchResult?.pct||50;
   scores.porutham = {
     score:porScore, weight:0.05,
     desc:`10 Porutham: ${matchResult?.totalScore||0}/${matchResult?.maxScore||44} (${porScore}%) — ${matchResult?.verdict||''}`
   };
- 
+
   // ── COMPUTE FINAL SCORES ──
   const weighted = Object.values(scores).reduce((sum,s) => sum + s.score*s.weight, 0);
   const overall = Math.round(weighted);
- 
+
   // Domain scores
   const emotional = Math.round((scores.moonCompat.score*0.5 + scores.moonVenusSync.score*0.3 + scores.lagnaCompat.score*0.2));
   const physical  = Math.round((scores.venusMarsChemistry.score*0.6 + scores.moonVenusSync.score*0.4));
@@ -2397,10 +2465,10 @@ function computeMatchScore(chart1, chart2, matchResult) {
   const karmic    = Math.round((scores.darakaraka.score*0.5 + scores.atmakaraka.score*0.25 + scores.d9Lagna.score*0.25));
   const conflict  = Math.round(100 - scores.riskFactors.score);
   const longterm  = Math.round((stability*0.4 + karmic*0.3 + scores.d9Venus.score*0.3));
- 
+
   const verdict = overall>=80?'Excellent Match':overall>=70?'Very Good Match':overall>=60?'Good Match':
     overall>=50?'Acceptable Match':overall>=40?'Challenging Match':'Difficult Match';
- 
+
   return {
     scores, overall, emotional, physical, stability, karmic, conflict, longterm,
     verdict,
@@ -2410,16 +2478,16 @@ function computeMatchScore(chart1, chart2, matchResult) {
     summary: `Overall: ${overall}/100 (${verdict}) | Emotional: ${emotional}% | Physical: ${physical}% | Stability: ${stability}% | Karmic: ${karmic}% | Conflict risk: ${conflict}% | Long-term: ${longterm}%`
   };
 }
- 
+
 module.exports.computeMatchScore = computeMatchScore;
- 
+
 // ═══════════════════════════════════════════════════
 // ADVANCED ENGINE — BATCH 5: PRECISION LAYER
 // ═══════════════════════════════════════════════════
- 
+
 // ── 46. Planet Maturity Ages ──
 const PLANET_MATURITY = { Sun:22, Moon:24, Mars:28, Mercury:32, Jupiter:16, Venus:25, Saturn:36, Rahu:42, Ketu:48 };
- 
+
 function getPlanetMaturityStatus(planets, dob) {
   const ageNow = Math.floor((Date.now() - new Date(dob)) / (365.25*24*3600*1000));
   const status = {};
@@ -2444,7 +2512,7 @@ function getPlanetMaturityStatus(planets, dob) {
     immatureNow: Object.entries(status).filter(([,s])=>!s.matured).map(([n])=>n),
   };
 }
- 
+
 // ── 30. Functional Benefic/Malefic Engine ──
 // Based on Lagna — each planet has a functional role
 function getFunctionalNature(lagnaIdx) {
@@ -2453,7 +2521,7 @@ function getFunctionalNature(lagnaIdx) {
   const TRIKONA_LORDS = [1,5,9].map(h  => RASI_LORD[(lagnaIdx+h-1)%12]);
   const DUSTHANA_LORDS= [6,8,12].map(h => RASI_LORD[(lagnaIdx+h-1)%12]);
   const MARAKA_LORDS  = [2,7].map(h    => RASI_LORD[(lagnaIdx+h-1)%12]);
- 
+
   const nature = {};
   for (const planet of ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn']) {
     const isKendra  = KENDRA_LORDS.includes(planet);
@@ -2461,19 +2529,19 @@ function getFunctionalNature(lagnaIdx) {
     const isDusthana= DUSTHANA_LORDS.includes(planet);
     const isMaraka  = MARAKA_LORDS.includes(planet);
     const isYogakaraka = isKendra && isTrikona;
- 
+
     let role = 'neutral';
     if (isYogakaraka) role = 'yogakaraka (most benefic)';
     else if (isTrikona && !isDusthana) role = 'functional benefic (trikona lord)';
     else if (isKendra && !isDusthana) role = 'functional benefic (kendra lord)';
     else if (isDusthana && !isKendra && !isTrikona) role = 'functional malefic (dusthana lord)';
     else if (isMaraka) role = 'maraka (2nd/7th lord)';
- 
+
     nature[planet] = { isKendra, isTrikona, isDusthana, isMaraka, isYogakaraka, role };
   }
   return nature;
 }
- 
+
 // ── 40. Age Filter / Life Stage Realism ──
 function getLifeStageContext(age) {
   if (age < 18) return {
@@ -2513,7 +2581,7 @@ function getLifeStageContext(age) {
     note: 'Focus on longevity, wisdom, and family legacy.'
   };
 }
- 
+
 // ── 44. Severity Control / Affliction Scoring ──
 function getAfflictionSeverity(score) {
   if (score <= 30) return { level: 'mild', desc: 'mild tendency, easily managed' };
@@ -2521,7 +2589,7 @@ function getAfflictionSeverity(score) {
   if (score <= 80) return { level: 'strong', desc: 'strong — likely to manifest, needs conscious effort' };
   return { level: 'severe', desc: 'severe — significant life impact, remedies strongly advised' };
 }
- 
+
 // ── 46/47. Nakshatra Pada Psychology (deeper) ──
 const PADA_NAVAMSA = [
   'Mesha','Rishabha','Mithuna','Kataka',  // Padas 1-4 of Nak 1
@@ -2541,7 +2609,7 @@ function getNakshatraPadaDetails(nakIdx, pada) {
     element: RASI_ELEMENT?.[navamsaSign] || 'mixed',
   };
 }
- 
+
 // ── 54. Event Trigger Score ──
 function getEventTriggerScore(dashaActive, transitActive, navamsaSupport, ashtakavargaScore) {
   // Dasha=40%, Transit=30%, Navamsa=15%, Ashtakavarga=15%
@@ -2554,18 +2622,18 @@ function getEventTriggerScore(dashaActive, transitActive, navamsaSupport, ashtak
     breakdown: `Dasha:${dashaActive?40:0} Transit:${transitActive?30:0} Navamsa:${navamsaSupport?15:0} Ashtakavarga:${ashtakavargaScore>=4?15:ashtakavargaScore>=3?10:0}`
   };
 }
- 
+
 // ── 56. Relationship Karma Score ──
 function getRelationshipKarmaScore(planets, lagnaIdx, karakas, upapadaLagna, navamsa) {
   const H = name => planets[name]?.house || 0;
   const ST = name => planets[name]?.status || '';
   let score = 50;
   const factors = [];
- 
+
   const dk = karakas?.Darakaraka;
   const ul = upapadaLagna;
   const l7 = RASI_LORD[(lagnaIdx+6)%12];
- 
+
   // DK strength
   if (dk && ST(dk).includes('Exalted')) { score+=15; factors.push(`DK ${dk} exalted`); }
   if (dk && ST(dk).includes('Debilitated')) { score-=15; factors.push(`DK ${dk} debilitated`); }
@@ -2590,23 +2658,23 @@ function getRelationshipKarmaScore(planets, lagnaIdx, karakas, upapadaLagna, nav
   // Rahu-Venus — obsessive element
   const rahuVenus = Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0)) < 10;
   if (rahuVenus) { factors.push('Rahu-Venus: obsessive love element present'); }
- 
+
   score = Math.max(0, Math.min(100, score));
   const level = score>=75?'Strong karmic bond — relationship feels destined':
     score>=55?'Moderate karmic bond — relationship takes effort to deepen':
     score>=35?'Weak karmic bond — relationship may feel karmic debt rather than gift':
     'Heavy karmic relationship — significant past-life patterns to resolve';
- 
+
   return { score, level, factors,
     summary: `Relationship Karma: ${score}/100 — ${level} | Factors: ${factors.join(', ')}` };
 }
- 
+
 // ── 65. Manifestation Resistance Score ──
 function getManifestationResistance(planets, lagnaIdx, yogas) {
   const H = name => planets[name]?.house || 0;
   let score = 0;
   const factors = [];
- 
+
   // Saturn strong aspects
   if (planets.Saturn?.bala >= 70) { score+=15; factors.push('Saturn dominant — delays gratification'); }
   // Retrograde planets
@@ -2623,16 +2691,16 @@ function getManifestationResistance(planets, lagnaIdx, yogas) {
   // Neecha planets without Bhanga
   const neechaActive = yogas.filter(y=>y.name.includes('ACTIVE')&&y.name.includes('Neecham'));
   if (neechaActive.length >= 1) { score+=15; factors.push(`${neechaActive.length} active debilitation(s) — results blocked`); }
- 
+
   score = Math.min(100, score);
   const level = score>=70?'HIGH resistance — good yogas may manifest late or partially':
     score>=40?'MODERATE resistance — some delay expected, consistent effort needed':
     'LOW resistance — chart manifests relatively smoothly';
- 
+
   return { score, level, factors,
     summary: `Manifestation Resistance: ${score}/100 (${level}) | ${factors.join(' | ')}` };
 }
- 
+
 // ── 74. Probability Matrix for Major Events ──
 function getProbabilityMatrix(chart, weightedScores, tripleConfirmation) {
   const ms = weightedScores?.marriage;
@@ -2640,11 +2708,11 @@ function getProbabilityMatrix(chart, weightedScores, tripleConfirmation) {
   const ws = weightedScores?.wealth;
   const d  = chart.dasha;
   const mw = chart.refinedMarriage?.windows || [];
- 
+
   const marriageProb = ms?.blended >= 70 ? 'HIGH (80-100%)' : ms?.blended >= 55 ? 'LIKELY (60-79%)' : ms?.blended >= 40 ? 'POSSIBLE (40-59%)' : 'LOWER (20-39%)';
   const careerProb   = cs?.normalized >= 65 ? 'HIGH' : cs?.normalized >= 50 ? 'LIKELY' : 'MODERATE';
   const wealthProb   = ws?.normalized >= 65 ? 'HIGH' : ws?.normalized >= 50 ? 'LIKELY' : 'MODERATE';
- 
+
   return {
     marriage: {
       bestCase: mw[0] ? `Engagement/meeting in ${mw[0].period} (${mw[0].dates})` : 'Next favorable Dasha',
@@ -2665,7 +2733,7 @@ function getProbabilityMatrix(chart, weightedScores, tripleConfirmation) {
     summary: `Marriage: ${marriageProb} | Career: ${careerProb} | Wealth: ${wealthProb}`
   };
 }
- 
+
 // ── Bhrigu Bindu (Moon-Rahu midpoint) ──
 function getBhriguBindu(planets) {
   const moonSid = planets.Moon?.sid || 0;
@@ -2682,28 +2750,28 @@ function getBhriguBindu(planets) {
     summary: `Bhrigu Bindu at ${midpoint.toFixed(1)}° (${RASI_NAMES[bbRasiIdx]}) — transiting planets over this point trigger major life events`
   };
 }
- 
+
 // ── Unfinished Karma Detector ──
 function getUnfinishedKarma(planets, karakas) {
   const H = name => planets[name]?.house || 0;
   const flags = [];
   const dk = karakas?.Darakaraka;
   const ak = karakas?.Atmakaraka;
- 
+
   if (dk && planets[dk]?.retrograde) flags.push(`Darakaraka ${dk} retrograde — unfinished lover/spouse karma from past life`);
   if (ak && planets[ak]?.retrograde) flags.push(`Atmakaraka ${ak} retrograde — soul still working on its core lesson`);
   if (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10) flags.push('Rahu-Venus: obsessive unfulfilled desire pattern from past life');
   if (H('Ketu')===5) flags.push('Ketu in H5: unfinished creative/romantic karma — may repeat patterns from past life');
   if (H('Saturn')===7) flags.push('Saturn in H7: serious karmic debt in partnerships — must be worked through with patience');
   if (H('Ketu')===7) flags.push('Ketu in H7: past life spouse/partner karma — relationships feel familiar but incomplete');
- 
+
   return {
     flags,
     count: flags.length,
     summary: flags.length ? `Unfinished karma detected (${flags.length}): ${flags.join(' | ')}` : 'No major unfinished karma signatures'
   };
 }
- 
+
 module.exports.getPlanetMaturityStatus = getPlanetMaturityStatus;
 module.exports.getFunctionalNature = getFunctionalNature;
 module.exports.getLifeStageContext = getLifeStageContext;
@@ -2715,11 +2783,11 @@ module.exports.getManifestationResistance = getManifestationResistance;
 module.exports.getProbabilityMatrix = getProbabilityMatrix;
 module.exports.getBhriguBindu = getBhriguBindu;
 module.exports.getUnfinishedKarma = getUnfinishedKarma;
- 
+
 // ═══════════════════════════════════════════════════
 // ADVANCED ENGINE — BATCH 6: PRECISION LAYER 2
 // ═══════════════════════════════════════════════════
- 
+
 // ── 81. Orb-weighted aspect strength ──
 function getAspectStrength(planet1Sid, planet2Sid) {
   const diff = Math.abs(planet1Sid - planet2Sid);
@@ -2743,7 +2811,7 @@ function getAspectStrength(planet1Sid, planet2Sid) {
   }
   return null;
 }
- 
+
 // ── 83. Vargottama Detection ──
 // Planet in same sign in D1 and D9 = massively strong
 function detectVargottama(planets) {
@@ -2759,7 +2827,7 @@ function detectVargottama(planets) {
   }
   return vargottama;
 }
- 
+
 // ── 84. Pushkara Navamsa ──
 // Certain navamsa positions are highly auspicious
 const PUSHKARA_NAVAMSA = {
@@ -2790,18 +2858,18 @@ function detectPushkaraNavamsa(planets) {
   }
   return pushkara;
 }
- 
+
 // ── 82. Planet Dominance Score (priority weighting) ──
 function getPlanetDominance(planets, lagnaIdx, yogas, dasha) {
   const H = name => planets[name]?.house || 0;
   const vargottama = detectVargottama(planets);
   const pushkara = detectPushkaraNavamsa(planets);
- 
+
   const dominance = [];
   for (const [name, p] of Object.entries(planets)) {
     if (name === 'Rahu' || name === 'Ketu') continue;
     let score = p.bala || 50;
- 
+
     // Vargottama bonus (+20)
     if (vargottama.some(v => v.planet === name)) score += 20;
     // Pushkara bonus (+10)
@@ -2822,7 +2890,7 @@ function getPlanetDominance(planets, lagnaIdx, yogas, dasha) {
     if (p.retrograde) score += 5;
     // Combust removes much of the power
     if (p.combust) score -= 20;
- 
+
     dominance.push({ name, score: Math.max(0, Math.min(150, Math.round(score))),
       house: p.house, status: p.status, bala: p.bala,
       isVargottama: vargottama.some(v=>v.planet===name),
@@ -2839,52 +2907,52 @@ function getPlanetDominance(planets, lagnaIdx, yogas, dasha) {
     summary: `Dominant: ${dominance.slice(0,3).map(p=>p.name).join('>')} | Suppressed: ${dominance.slice(-3).map(p=>p.name).join(',')}`
   };
 }
- 
+
 // ── 89. Dasha Quality Score ──
 function getDashaQualityScore(dasha, planets, lagnaIdx, yogas) {
   const H = name => planets[name]?.house || 0;
   const current = dasha.current;
   const antar   = dasha.currentAntar;
   if (!current) return null;
- 
+
   const lord = current.lord;
   const antarLord = antar?.lord;
   const lordH = H(lord);
   const lordStatus = planets[lord]?.status || '';
- 
+
   let opportunity = 50, stress = 50, growth = 50, loss = 50, relationship = 50;
- 
+
   // Opportunity: Dasha lord in good house / strong
   if ([1,4,7,9,10,11].includes(lordH)) opportunity += 20;
   if ([6,8,12].includes(lordH)) opportunity -= 20;
   if (lordStatus.includes('Exalted') || lordStatus.includes('Own')) opportunity += 15;
   if (lordStatus.includes('Debilitated')) opportunity -= 15;
   opportunity = Math.max(0, Math.min(100, opportunity));
- 
+
   // Stress: malefic dashas, dusthana lords
   if (['Saturn','Mars','Rahu','Ketu'].includes(lord) && [6,8,12].includes(lordH)) stress += 20;
   if (['Saturn','Mars'].includes(lord) && lordStatus.includes('Enemy')) stress += 15;
   if ([1,4,7,10].includes(lordH) && (lordStatus.includes('Exalted')||lordStatus.includes('Own'))) stress -= 15;
   stress = Math.max(0, Math.min(100, stress));
- 
+
   // Growth: benefic dashas
   if (['Jupiter','Venus','Moon','Mercury'].includes(lord) && [1,4,5,7,9,10,11].includes(lordH)) growth += 20;
   if (yogas.some(y=>y.planet===lord&&y.type==='good')) growth += 15;
   growth = Math.max(0, Math.min(100, growth));
- 
+
   // Loss: dusthana placement, malefics
   if ([6,8,12].includes(lordH)) loss += 15;
   if (planets[lord]?.combust) loss += 10;
   if (planets[lord]?.retrograde) loss -= 5; // retrograde can delay loss
   loss = Math.max(0, Math.min(100, loss));
- 
+
   // Relationship: Venus/Moon/7th house involvement
   if (['Venus','Moon'].includes(lord) || lordH===7 || lordH===2 || lordH===11) relationship += 20;
   if (['Saturn','Mars'].includes(lord) && [7,8,12].includes(lordH)) relationship -= 15;
   relationship = Math.max(0, Math.min(100, relationship));
- 
+
   const overall = Math.round((opportunity + growth + (100-stress) + (100-loss) + relationship) / 5);
- 
+
   return {
     opportunity: Math.round(opportunity),
     stress: Math.round(stress),
@@ -2896,13 +2964,13 @@ function getDashaQualityScore(dasha, planets, lagnaIdx, yogas) {
     summary: `${lord} Mahadasha quality: ${overall}/100 (${overall>=70?'FAVORABLE':overall>=50?'MIXED':'CHALLENGING'}) | Opportunity:${Math.round(opportunity)}% Growth:${Math.round(growth)}% Stress:${Math.round(stress)}% Relationship:${Math.round(relationship)}%`
   };
 }
- 
+
 // ── 92. Birth Time Confidence Score ──
 function getBirthTimeConfidence(lagna, moonData) {
   const lagnaDegs = lagna.degInRasi;
   const moonDegs = moonData?.degInRasi || 15;
   const risks = [];
- 
+
   // Lagna near sign boundary (within 2°)
   if (lagnaDegs < 2 || lagnaDegs > 28) {
     risks.push(`Lagna at ${lagnaDegs.toFixed(1)}° — near sign boundary. 15-minute birth time error could change Lagna sign.`);
@@ -2913,7 +2981,7 @@ function getBirthTimeConfidence(lagna, moonData) {
   if (nakDeg < 0.5 || nakDeg > (nakSize - 0.5)) {
     risks.push(`Moon near Nakshatra boundary — Dasha starting period may be off if birth time inaccurate.`);
   }
- 
+
   const level = risks.length >= 2 ? 'HIGH' : risks.length === 1 ? 'MODERATE' : 'LOW';
   return {
     level, risks,
@@ -2923,37 +2991,37 @@ function getBirthTimeConfidence(lagna, moonData) {
       : `Birth time confidence: GOOD — Lagna at ${lagnaDegs.toFixed(1)}° and Moon well within Nakshatra boundaries`
   };
 }
- 
+
 // ── 95. Recovery Engine ──
 function getRecoveryIndicators(planets, lagnaIdx, yogas) {
   const H = name => planets[name]?.house || 0;
   const recovery = [];
- 
+
   // Jupiter as healer
   const jupH = H('Jupiter');
   const jupSt = planets.Jupiter?.status || '';
   if ([1,4,5,7,9,10].includes(jupH)) recovery.push(`Jupiter in H${jupH} (${jupSt.split(' ')[0]}) — protection, expansion, optimism; recovers from setbacks faster`);
   if (jupSt.includes('Exalted')) recovery.push('Jupiter exalted — exceptional grace and recovery power throughout life');
- 
+
   // Moon in good position
   const moonH = H('Moon');
   if (planets.Moon?.status.includes('Exalted') || planets.Moon?.status.includes('Own'))
     recovery.push(`Moon in ${planets.Moon?.rasi} (${planets.Moon?.status.split(' ')[0]}) — emotional resilience, strong support from family/mother`);
   if ([1,4,5].includes(moonH)) recovery.push(`Moon in H${moonH} — emotional stability, ability to heal and move forward`);
- 
+
   // 9th house strength (dharma/luck)
   const l9 = RASI_LORD[(lagnaIdx+8)%12];
   const l9St = planets[l9]?.status || '';
   if (l9St.includes('Exalted')||l9St.includes('Own')) recovery.push(`9th lord ${l9} strong — divine grace, luck returns after difficult periods`);
- 
+
   // Vipareeta Raja Yoga = rises from destruction
   if (yogas.some(y=>y.name.includes('Vipareeta')))
     recovery.push('Vipareeta Raja Yoga present — this chart is built to rise after collapse. Difficulties actually strengthen this person.');
- 
+
   // 12th house benefic = spiritual recovery
   const h12Benefics = Object.entries(planets).filter(([n,p])=>p.house===12 && ['Jupiter','Venus','Moon'].includes(n));
   if (h12Benefics.length > 0) recovery.push(`${h12Benefics.map(([n])=>n).join(',')} in H12 — hidden spiritual support, recovers through retreat and introspection`);
- 
+
   return {
     indicators: recovery,
     strength: recovery.length >= 3 ? 'STRONG' : recovery.length >= 2 ? 'MODERATE' : 'LIMITED',
@@ -2962,29 +3030,29 @@ function getRecoveryIndicators(planets, lagnaIdx, yogas) {
       : 'Limited recovery indicators — requires active remedies and effort to bounce back'
   };
 }
- 
+
 // ── 90. Transit Heatmap (next 6 months scored) ──
 function getTransitHeatmap(lagnaIdx, moonRasiIdx) {
   const now = new Date();
   const jdNow = 2451545.0 + (now - new Date('2000-01-01T12:00:00Z')) / (1000*86400);
   const ayan = getLahiriAyanamsha(jdNow);
   const T = (jdNow - 2451545.0) / 36525;
- 
+
   const months = [];
   for (let m = 0; m < 6; m++) {
     const futureT = T + (m * 30.44 / 365.25);
     const futureJd = jdNow + m * 30.44;
- 
+
     const Mjup = norm360(20.9 + 3034.906 * futureT);
     const jupTrop = norm360(34.3515 + 3034.9057*futureT + 5.5549*Math.sin(toRad(Mjup)) - 14.3312);
     const jupH = ((Math.floor(sid(jupTrop,ayan)/30) - lagnaIdx + 12)%12)+1;
     const jupFromMoon = ((Math.floor(sid(jupTrop,ayan)/30) - moonRasiIdx + 12)%12)+1;
- 
+
     const Msat = norm360(317.0207 + 1222.1138*futureT);
     const satTrop = norm360(50.0775 + 1222.1138*futureT + 6.3585*Math.sin(toRad(Msat)) - 92.8553);
     const satH = ((Math.floor(sid(satTrop,ayan)/30) - lagnaIdx + 12)%12)+1;
     const satFromMoon = ((Math.floor(sid(satTrop,ayan)/30) - moonRasiIdx + 12)%12)+1;
- 
+
     // Score this month
     let score = 50;
     if ([1,2,4,5,7,9,10,11].includes(jupFromMoon)) score += 15;
@@ -2993,7 +3061,7 @@ function getTransitHeatmap(lagnaIdx, moonRasiIdx) {
     if ([4,8].includes(satFromMoon)) score -= 15;
     if ([1,2].includes(satFromMoon)) score -= 10; // Sade Sati
     score = Math.max(0, Math.min(100, Math.round(score)));
- 
+
     const d = new Date(now);
     d.setMonth(d.getMonth() + m);
     const monthName = d.toLocaleDateString('en-IN',{month:'short',year:'numeric'});
@@ -3002,7 +3070,7 @@ function getTransitHeatmap(lagnaIdx, moonRasiIdx) {
       jupH, satH, jupFromMoon, satFromMoon
     });
   }
- 
+
   const best = months.reduce((a,b) => a.score > b.score ? a : b);
   const worst = months.reduce((a,b) => a.score < b.score ? a : b);
   return {
@@ -3012,18 +3080,18 @@ function getTransitHeatmap(lagnaIdx, moonRasiIdx) {
     summary: months.map(m=>`${m.month}:${m.score}(${m.quality.slice(0,3)})`).join(' | ')
   };
 }
- 
+
 // ── Dusthana Transformation Logic ──
 function getDusthanaTransformations(planets, lagnaIdx, yogas) {
   const H = name => planets[name]?.house || 0;
   const ST = name => planets[name]?.status || '';
   const transformations = [];
- 
+
   // 6th lord in 6/8/12 = Vipareeta Raja (Harsha) — already detected in yogas
   // 8th lord in 6/8/12 = Vipareeta Raja (Sarala)
   // 12th lord in 6/8/12 = Vipareeta Raja (Vimala)
   // These are already in yoga engine — just surface the transformation logic
- 
+
   // Benefic in dusthana = hidden growth
   for (const [name, p] of Object.entries(planets)) {
     if (![6,8,12].includes(p.house)) continue;
@@ -3042,7 +3110,7 @@ function getDusthanaTransformations(planets, lagnaIdx, yogas) {
       });
     }
   }
- 
+
   return {
     transformations,
     summary: transformations.length
@@ -3050,7 +3118,7 @@ function getDusthanaTransformations(planets, lagnaIdx, yogas) {
       : 'No major dusthana transformations'
   };
 }
- 
+
 module.exports.getAspectStrength = getAspectStrength;
 module.exports.detectVargottama = detectVargottama;
 module.exports.detectPushkaraNavamsa = detectPushkaraNavamsa;
@@ -3060,11 +3128,11 @@ module.exports.getBirthTimeConfidence = getBirthTimeConfidence;
 module.exports.getRecoveryIndicators = getRecoveryIndicators;
 module.exports.getTransitHeatmap = getTransitHeatmap;
 module.exports.getDusthanaTransformations = getDusthanaTransformations;
- 
+
 // ═══════════════════════════════════════════════════
 // ADVANCED ENGINE — BATCH 7: CERTAINTY & PRECISION
 // ═══════════════════════════════════════════════════
- 
+
 // ── 1. Certainty Engine ──
 // confidence = supporting signals - blocking signals → normalized 0-100%
 function getCertaintyScore(supportingSignals, blockingSignals, label) {
@@ -3083,7 +3151,7 @@ function getCertaintyScore(supportingSignals, blockingSignals, label) {
     summary: `${label}: ${score}% confidence (${level}) | ${supportingSignals.length} supporting, ${blockingSignals.length} blocking`
   };
 }
- 
+
 // ── 3. Trigger Stack Engine ──
 // Event = Natal Promise × Dasha × Transit × House Lord × Divisional
 function getTriggerStack(event, checks) {
@@ -3103,13 +3171,13 @@ function getTriggerStack(event, checks) {
     summary: `${event} trigger stack: ${count}/5 (${strength}) | ${stack.filter(s=>s.active).map(s=>s.name).join(' + ')}`
   };
 }
- 
+
 // ── Marriage Trigger Stack ──
 function getMarriageTriggerStack(planets, lagnaIdx, dasha, transits, karakas, upapadaLagna, navamsa, weightedScores) {
   const H = name => planets[name]?.house || 0;
   const l7 = RASI_LORD[(lagnaIdx+6)%12];
   const dk = karakas?.Darakaraka;
- 
+
   // Natal promise: H7 lord strong, Venus dignified, UL good, DK strong
   const l7Good = !['Debilitated','Enemy'].some(s => planets[l7]?.status?.includes(s)) && ![6,8,12].includes(H(l7));
   const venusGood = !planets.Venus?.combust && !planets.Venus?.status.includes('Debilitated');
@@ -3117,29 +3185,29 @@ function getMarriageTriggerStack(planets, lagnaIdx, dasha, transits, karakas, up
   const d9VenusGood = !navamsa?.planets?.Venus?.status.includes('Debilitated');
   const natalCount = [l7Good, venusGood, ulGood, d9VenusGood].filter(Boolean).length;
   const natal = natalCount >= 2 ? `${natalCount}/4 marriage indicators strong (H7 lord, Venus, UL, D9 Venus)` : null;
- 
+
   // Dasha activation
   const dashaActive = dasha.dashaEventTriggers?.marriage?.length > 0;
   const dashaDesc = dashaActive ? `${dasha.current?.lord}–${dasha.currentAntar?.lord} activates marriage houses` : null;
- 
+
   // Transit trigger
   const transitActive = transits.marriage?.length > 0 || transits.doubleTransitActive;
   const transitDesc = transitActive ? (transits.marriage?.[0] || 'Double transit active') : null;
- 
+
   // House lord active
   const houseLordActive = H(dasha.current?.lord) === 7 || H(dasha.currentAntar?.lord) === 7 ||
     (planets[dasha.current?.lord]?.aspects||[]).includes(7) ||
     (dasha.current?.lord === l7) || (dasha.currentAntar?.lord === l7);
   const houseLordDesc = houseLordActive ? `7th lord or H7 activated by current Dasha` : null;
- 
+
   // Divisional: D9 supports
   const divDesc = d9VenusGood ? 'D9 Venus supports marriage karma' : null;
- 
+
   return getTriggerStack('Marriage', {
     natal, dasha: dashaDesc, transit: transitDesc, houseLord: houseLordDesc, divisional: divDesc
   });
 }
- 
+
 // ── 4. Affliction Severity Engine ──
 function getAfflictionSeverityDetailed(planet, planets, lagnaIdx, yogas) {
   if (!planets[planet]) return null;
@@ -3147,14 +3215,14 @@ function getAfflictionSeverityDetailed(planet, planets, lagnaIdx, yogas) {
   const H = name => planets[name]?.house || 0;
   const afflictions = [];
   let severityScore = 0;
- 
+
   // Sign affliction
   if (p.status.includes('Debilitated')) { severityScore += 30; afflictions.push('Debilitated in sign'); }
   if (p.status.includes('Enemy')) { severityScore += 15; afflictions.push('Enemy sign'); }
- 
+
   // Combustion
   if (p.combust) { severityScore += 25; afflictions.push('Combust (within Sun orb)'); }
- 
+
   // Malefic aspects (with orb check)
   const satAspects = (planets.Saturn?.aspects||[]).includes(p.house);
   const marsAspects = (planets.Mars?.aspects||[]).includes(p.house);
@@ -3162,36 +3230,36 @@ function getAfflictionSeverityDetailed(planet, planets, lagnaIdx, yogas) {
   if (satAspects) { severityScore += 20; afflictions.push('Saturn aspects'); }
   if (marsAspects) { severityScore += 15; afflictions.push('Mars aspects'); }
   if (rahuConj)  { severityScore += 20; afflictions.push('Rahu conjunct'); }
- 
+
   // Dusthana house
   if ([6,8,12].includes(p.house)) { severityScore += 10; afflictions.push(`In H${p.house} (dusthana)`); }
- 
+
   // Protections (reduce severity)
   const beneficAspects = (planets.Jupiter?.aspects||[]).includes(p.house) || (planets.Venus?.aspects||[]).includes(p.house);
   const isVargottama = p.rasiIdx === p.navamsaRasiIdx;
   const hasNeechaBhanga = yogas.some(y => y.planet === planet && y.name.includes('Neecha Bhanga'));
- 
+
   if (beneficAspects) { severityScore -= 15; }
   if (isVargottama)   { severityScore -= 20; }
   if (hasNeechaBhanga){ severityScore -= 25; }
   if (p.retrograde)   { severityScore -= 10; }
- 
+
   severityScore = Math.max(0, Math.min(100, severityScore));
   const level = severityScore >= 70 ? 'SEVERE' : severityScore >= 50 ? 'STRONG' :
     severityScore >= 30 ? 'MODERATE' : 'MILD';
- 
+
   const protections = [];
   if (beneficAspects) protections.push('Jupiter/Venus aspect softens');
   if (isVargottama)   protections.push('Vargottama — D9 support strong');
   if (hasNeechaBhanga)protections.push('Neecha Bhanga active');
   if (p.retrograde)   protections.push('Retrograde adds internalized strength');
- 
+
   return {
     planet, severityScore, level, afflictions, protections,
     summary: `${planet} affliction: ${level} (${severityScore}/100) | Afflictions: ${afflictions.join(', ') || 'none'} | Protected by: ${protections.join(', ') || 'none'}`
   };
 }
- 
+
 // ── 2. Rectification Warning ──
 function getRectificationWarning(lagna, planets) {
   const warnings = [];
@@ -3199,13 +3267,13 @@ function getRectificationWarning(lagna, planets) {
   const moonDegs  = planets.Moon?.degInRasi || 15;
   const nakDeg    = (planets.Moon?.sid || 0) % (360/27);
   const nakSize   = 360/27;
- 
+
   if (lagnaDegs < 2 || lagnaDegs > 28)
     warnings.push(`Lagna at ${lagnaDegs.toFixed(1)}° — within 2° of sign boundary. A 15-minute birth time error could change Lagna to ${lagnaDegs < 2 ? 'previous sign' : 'next sign'}.`);
- 
+
   if (nakDeg < 1 || nakDeg > (nakSize - 1))
     warnings.push(`Moon near Nakshatra boundary — Vimshottari Dasha starting lord may change with ±15 min birth time correction.`);
- 
+
   // Check navamsa sensitivity (planet near 3.2° navamsa division)
   const navamsaDiv = 3.333;
   for (const [name, p] of Object.entries(planets)) {
@@ -3214,7 +3282,7 @@ function getRectificationWarning(lagna, planets) {
     if (posInNavamsa < 0.2 || posInNavamsa > (navamsaDiv - 0.2))
       warnings.push(`${name} near Navamsa boundary (${p.degInRasi.toFixed(2)}° in ${p.rasi}) — D9 position may shift with small birth time correction.`);
   }
- 
+
   const risk = warnings.length >= 3 ? 'HIGH' : warnings.length >= 1 ? 'MODERATE' : 'LOW';
   return {
     risk, warnings,
@@ -3223,35 +3291,35 @@ function getRectificationWarning(lagna, planets) {
       : 'Birth time appears stable — Lagna and Moon well within boundaries'
   };
 }
- 
+
 // ── 5. Domain Protector Engine ──
 function getDomainProtector(planets, lagnaIdx, yogas, domain) {
   const H = name => planets[name]?.house || 0;
   const protectors = [];
- 
+
   // Jupiter protection
   const jupH = H('Jupiter');
   const jupSt = planets.Jupiter?.status || '';
   if (jupSt.includes('Exalted') || jupSt.includes('Own') || [1,4,5,7,9,10].includes(jupH))
     protectors.push(`Jupiter in H${jupH} (${jupSt.split(' ')[0]}) — grace, expansion, protection`);
- 
+
   // Lagna lord protection
   const lagnaLord = RASI_LORD[lagnaIdx];
   if (![6,8,12].includes(H(lagnaLord)) && !planets[lagnaLord]?.combust)
     protectors.push(`Lagna lord ${lagnaLord} in H${H(lagnaLord)} — self is protected, vitality maintained`);
- 
+
   // D9 support
   const d9VenusSt = ''; // would need navamsa passed in
   // Vipareeta Raja
   if (yogas.some(y => y.name.includes('Vipareeta')))
     protectors.push('Vipareeta Raja Yoga — chart rises from adversity, difficulties become fuel');
- 
+
   // Pushkara planet
   // Vargottama
   const vargottamaPlanets = Object.entries(planets).filter(([,p]) => p.rasiIdx === p.navamsaRasiIdx).map(([n]) => n);
   if (vargottamaPlanets.length > 0)
     protectors.push(`${vargottamaPlanets.join(', ')} Vargottama — full strength in D9, long-term outcomes better than short-term appears`);
- 
+
   // Domain-specific
   if (domain === 'marriage') {
     if (yogas.some(y => y.name.includes('Hamsa'))) protectors.push('Hamsa Yoga (Jupiter Kendra) — blessed marriage karma');
@@ -3267,7 +3335,7 @@ function getDomainProtector(planets, lagnaIdx, yogas, domain) {
     if (yogas.some(y => y.name.includes('Lakshmi'))) protectors.push('Lakshmi Yoga — wealth karma exceptionally protected');
     if (yogas.some(y => y.name.includes('Gajakesari'))) protectors.push('Gajakesari Yoga — financial grace, Jupiter-Moon alignment');
   }
- 
+
   return {
     domain, protectors,
     strongest: protectors[0] || 'No major protector active — requires self-effort',
@@ -3276,7 +3344,7 @@ function getDomainProtector(planets, lagnaIdx, yogas, domain) {
       : `${domain}: limited natural protection — conscious effort required`
   };
 }
- 
+
 // ── 6. Destiny vs Free Will Classification ──
 function getKarmaClassification(planets, lagnaIdx, yogas, karakas) {
   const H = name => planets[name]?.house || 0;
@@ -3286,39 +3354,39 @@ function getKarmaClassification(planets, lagnaIdx, yogas, karakas) {
     avoidable: [],
     earned: []
   };
- 
+
   // Fixed karma — very strong yogas, 5+ indicators, AK in fixed patterns
   const ak = karakas?.Atmakaraka;
   if (yogas.some(y => y.name.includes('Pancha Mahapurusha') || y.name.includes('Hamsa') || y.name.includes('Ruchaka') || y.name.includes('Malavya')))
     classifications.fixed.push('Career/life direction strongly fixed by Pancha Mahapurusha yoga — this person is built for a specific calling');
- 
+
   if (planets[ak]?.status.includes('Exalted'))
     classifications.fixed.push(`Soul-level mission (Atmakaraka ${ak} exalted) — life purpose is clearly defined and likely to manifest`);
- 
+
   // Flexible karma — moderate indicators, dasha-dependent
   const l7 = RASI_LORD[(lagnaIdx+6)%12];
   const marriageScore = yogas.filter(y => y.planet === 'Venus' || y.planet === l7).length;
   if (marriageScore >= 2 && marriageScore <= 4)
     classifications.flexible.push(`Marriage timing is flexible — chart shows potential but exact timing depends on choices and dasha activation`);
- 
+
   if (H('Jupiter') !== 7 && ![6,8,12].includes(H(l7)))
     classifications.flexible.push('Wealth accumulation is flexible — foundation exists but requires disciplined action');
- 
+
   // Avoidable karma — afflictions that have cancellation routes
   const mangalActive = yogas.some(y => y.name.includes('Mangal Dosha — ACTIVE'));
   if (mangalActive)
     classifications.avoidable.push('Mangal Dosha effects can be reduced through pariharams and aware partner selection');
- 
+
   if (yogas.some(y => y.name.includes('Pitru Dosha')))
     classifications.avoidable.push('Ancestral karma (Pitru Dosha) — can be cleared through specific tarpan and ancestor rituals');
- 
+
   // Earned karma — requires effort, strong indicators but Saturn/Ketu gated
   if (planets.Saturn?.bala >= 60)
     classifications.earned.push('Career authority and wealth (Saturn strong) — comes only through sustained discipline and patience, not luck');
- 
+
   if (H('Ketu') === 10 || H('Ketu') === 1)
     classifications.earned.push('Success requires overcoming self-sabotage tendencies (Ketu in success house) — must be consciously earned');
- 
+
   return {
     classifications,
     summary: [
@@ -3329,7 +3397,7 @@ function getKarmaClassification(planets, lagnaIdx, yogas, karakas) {
     ].filter(Boolean).join('\n')
   };
 }
- 
+
 module.exports.getCertaintyScore = getCertaintyScore;
 module.exports.getTriggerStack = getTriggerStack;
 module.exports.getMarriageTriggerStack = getMarriageTriggerStack;
@@ -3337,3 +3405,1349 @@ module.exports.getAfflictionSeverityDetailed = getAfflictionSeverityDetailed;
 module.exports.getRectificationWarning = getRectificationWarning;
 module.exports.getDomainProtector = getDomainProtector;
 module.exports.getKarmaClassification = getKarmaClassification;
+
+// ═══════════════════════════════════════════════════
+// ADVANCED ENGINE — BATCH 8: DEEP ANALYSIS ENGINES
+// ═══════════════════════════════════════════════════
+
+// ── 1. House Story Engine ──
+function buildHouseStoryEngine(planets, lagnaIdx, allYogas) {
+  const H = name => planets[name]?.house || 0;
+  const stories = {};
+
+  for (let h = 1; h <= 12; h++) {
+    const signIdx = (lagnaIdx + h - 1) % 12;
+    const lord = RASI_LORD[signIdx];
+    const lordData = planets[lord];
+    const lordHouse = lordData?.house || 0;
+    const occupants = Object.entries(planets).filter(([,p]) => p.house === h).map(([n]) => n);
+    const aspects = Object.entries(planets).filter(([n,p]) => (p.aspects||[]).includes(h)).map(([n]) => n);
+    const beneficAspects = aspects.filter(n => ['Jupiter','Venus','Moon'].includes(n));
+    const maleficAspects = aspects.filter(n => ['Saturn','Mars','Rahu','Ketu'].includes(n));
+
+    // Lord placement interpretation
+    let lordStory = '';
+    const HOUSE_SIGNIF_SHORT = {1:'self/health',2:'wealth/speech',3:'effort/siblings',4:'home/mother',5:'children/intelligence',
+      6:'enemies/disease',7:'spouse/partnership',8:'transformation/hidden',9:'luck/father',10:'career/authority',
+      11:'gains/wishes',12:'loss/foreign/spiritual'};
+    const fromOwnHouse = ((lordHouse - h + 12) % 12) + 1;
+
+    if (lordHouse === h) {
+      lordStory = `Lord ${lord} in own house — maximum strength, house themes manifest strongly`;
+    } else if ([6,8,12].includes(lordHouse)) {
+      const dusthanaTheme = lordHouse === 6 ? 'conflict/service' : lordHouse === 8 ? 'transformation/obstacles' : 'foreign/loss/spiritual';
+      lordStory = `Lord ${lord} in H${lordHouse} (${dusthanaTheme}) — house themes face obstruction or manifest through hidden/difficult channels`;
+    } else if ([1,4,7,10].includes(lordHouse)) {
+      lordStory = `Lord ${lord} in H${lordHouse} (Kendra) — house themes are strongly activated and visible`;
+    } else {
+      lordStory = `Lord ${lord} in H${lordHouse} (${HOUSE_SIGNIF_SHORT[lordHouse]||''}) — house themes connect to ${HOUSE_SIGNIF_SHORT[lordHouse]||''}`;
+    }
+
+    // Special cross-house stories
+    let specialStory = '';
+    if (h === 7 && lordHouse === 12) specialStory = 'H7 lord in H12: spouse may be from foreign place, or relationship involves sacrifice/distance';
+    if (h === 7 && lordHouse === 8) specialStory = 'H7 lord in H8: marriage involves transformation, possible secrecy, or karmic intensity';
+    if (h === 10 && lordHouse === 12) specialStory = 'H10 lord in H12: career in foreign lands, spiritual/NGO/hospital work, or career involves sacrifice';
+    if (h === 2 && lordHouse === 12) specialStory = 'H2 lord in H12: wealth flows outward (expenses), foreign income possible, spiritual spending';
+    if (h === 5 && lordHouse === 12) specialStory = 'H5 lord in H12: children may be delayed or involve spiritual/foreign connection';
+    if (h === 4 && lordHouse === 6) specialStory = 'H4 lord in H6: home life involves conflict, mother may face health issues, property disputes possible';
+
+    stories[h] = {
+      house: h,
+      sign: RASI_NAMES[signIdx],
+      lord, lordHouse,
+      lordStatus: lordData?.status || 'N/A',
+      lordBala: lordData?.bala || 0,
+      occupants,
+      beneficAspects,
+      maleficAspects,
+      lordStory,
+      specialStory,
+      summary: `H${h} (${RASI_NAMES[signIdx]}): ${occupants.length ? 'Contains '+occupants.join(',') : 'Empty'} | ${lordStory}${specialStory ? ' | '+specialStory : ''}`
+    };
+  }
+  return { stories, summary: Object.values(stories).map(s => s.summary).join('\n') };
+}
+
+// ── 13. Dispositor Chain Engine ──
+function getDispositorChain(planets, lagnaIdx) {
+  const chains = {};
+  const H = name => planets[name]?.house || 0;
+
+  for (const [name, p] of Object.entries(planets)) {
+    if (['Rahu','Ketu'].includes(name)) continue;
+    const chain = [name];
+    let current = name;
+    let depth = 0;
+
+    while (depth < 8) {
+      const signLord = RASI_LORD[planets[current]?.rasiIdx || 0];
+      if (signLord === current || chain.slice(1).includes(signLord)) break; // own sign or loop
+      chain.push(signLord);
+      current = signLord;
+      depth++;
+    }
+
+    const finalDispositor = chain[chain.length - 1];
+    chains[name] = {
+      chain,
+      finalDispositor,
+      finalDispositorHouse: H(finalDispositor),
+      finalDispositorStatus: planets[finalDispositor]?.status || '',
+      chainLength: chain.length,
+      summary: `${name}: ${chain.join('→')} | Root controller: ${finalDispositor} (H${H(finalDispositor)}, ${(planets[finalDispositor]?.status||'').split(' ')[0]})`
+    };
+  }
+
+  // Find the most influential final dispositor
+  const fdCount = {};
+  Object.values(chains).forEach(c => {
+    fdCount[c.finalDispositor] = (fdCount[c.finalDispositor] || 0) + 1;
+  });
+  const chartRuler = Object.entries(fdCount).sort((a,b) => b[1]-a[1])[0];
+
+  return {
+    chains,
+    chartRuler: chartRuler ? { planet: chartRuler[0], count: chartRuler[1],
+      summary: `${chartRuler[0]} is the hidden chart ruler (controls ${chartRuler[1]} planets through dispositor chain)` } : null,
+    summary: Object.values(chains).map(c => c.summary).join('\n')
+  };
+}
+
+// ── 14. Planet Cluster Psychology ──
+function getPlanetClusters(planets, lagnaIdx) {
+  const houseClusters = {};
+  const signClusters = {};
+
+  for (const [name, p] of Object.entries(planets)) {
+    if (!houseClusters[p.house]) houseClusters[p.house] = [];
+    houseClusters[p.house].push(name);
+    if (!signClusters[p.rasi]) signClusters[p.rasi] = [];
+    signClusters[p.rasi].push(name);
+  }
+
+  const significantHouseClusters = Object.entries(houseClusters)
+    .filter(([,planets]) => planets.length >= 3)
+    .map(([h, planets]) => {
+      const HOUSE_THEMES = {1:'identity/self',2:'wealth/values',3:'communication',4:'home/mother',5:'creativity/children',
+        6:'service/conflict',7:'relationships',8:'transformation',9:'dharma/luck',10:'career',11:'gains/social',12:'spiritual/loss'};
+      return { house: parseInt(h), planets, theme: HOUSE_THEMES[h] || 'unknown',
+        desc: `Stellium in H${h} (${HOUSE_THEMES[h]||''}): ${planets.join('+')} — concentrated karma, obsessive energy in this life domain` };
+    });
+
+  return {
+    houseClusters: significantHouseClusters,
+    summary: significantHouseClusters.length
+      ? significantHouseClusters.map(c => c.desc).join(' | ')
+      : 'No major planetary clusters — karma is distributed'
+  };
+}
+
+// ── 15. Element Balance Engine ──
+const RASI_ELEM = {Mesha:'Fire',Simha:'Fire',Dhanu:'Fire',Rishabha:'Earth',Kanya:'Earth',Makara:'Earth',
+  Mithuna:'Air',Tula:'Air',Kumbha:'Air',Kataka:'Water',Vrischika:'Water',Meena:'Water'};
+
+function getElementBalance(planets) {
+  const counts = { Fire: 0, Earth: 0, Air: 0, Water: 0 };
+  const planetsByElement = { Fire: [], Earth: [], Air: [], Water: [] };
+  const weightedCounts = { Fire: 0, Earth: 0, Air: 0, Water: 0 };
+
+  for (const [name, p] of Object.entries(planets)) {
+    const elem = RASI_ELEM[p.rasi];
+    if (!elem) continue;
+    counts[elem]++;
+    planetsByElement[elem].push(name);
+    // Weight by bala
+    weightedCounts[elem] += (p.bala || 50) / 50;
+  }
+
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+  const dominant = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  const deficient = Object.entries(counts).sort((a,b) => a[1]-b[1])[0];
+
+  const ELEM_MEANING = {
+    Fire: 'action, ambition, leadership, confidence, risk-taking',
+    Earth: 'stability, practicality, material focus, patience, stubbornness',
+    Air: 'intellect, communication, social connections, adaptability, overthinking',
+    Water: 'emotion, intuition, empathy, depth, sensitivity, mood swings'
+  };
+
+  const balance = Object.entries(counts).map(([e, c]) => `${e}:${c}(${Math.round(c/total*100)}%)`).join(' | ');
+
+  return {
+    counts, weightedCounts, dominant: dominant[0], deficient: deficient[0],
+    planetsByElement, balance,
+    interpretation: `Dominant: ${dominant[0]} (${dominant[1]} planets) — ${ELEM_MEANING[dominant[0]]}. Deficient: ${deficient[0]} — needs conscious development of ${ELEM_MEANING[deficient[0]]} qualities.`,
+    summary: `Element balance: ${balance} | Dominant: ${dominant[0]} (${ELEM_MEANING[dominant[0]]?.split(',')[0]}) | Deficient: ${deficient[0]} (${ELEM_MEANING[deficient[0]]?.split(',')[0]})`
+  };
+}
+
+// ── 16. Modality Engine ──
+const RASI_MOD = {Mesha:'Movable',Kataka:'Movable',Tula:'Movable',Makara:'Movable',
+  Rishabha:'Fixed',Simha:'Fixed',Vrischika:'Fixed',Kumbha:'Fixed',
+  Mithuna:'Dual',Kanya:'Dual',Dhanu:'Dual',Meena:'Dual'};
+
+function getModalityEngine(planets) {
+  const counts = { Movable: 0, Fixed: 0, Dual: 0 };
+  for (const [,p] of Object.entries(planets)) {
+    const mod = RASI_MOD[p.rasi];
+    if (mod) counts[mod]++;
+  }
+  const dominant = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  const MOD_MEANING = {
+    Movable: 'initiates change, restless, adaptable, starts many things, may not finish',
+    Fixed: 'stubborn, persistent, reliable, resists change, depth over breadth',
+    Dual: 'flexible, indecisive, sees all sides, good communicator, scattered energy'
+  };
+  return {
+    counts, dominant: dominant[0],
+    summary: `Modality: Movable:${counts.Movable} Fixed:${counts.Fixed} Dual:${counts.Dual} | Dominant: ${dominant[0]} — ${MOD_MEANING[dominant[0]]}`
+  };
+}
+
+// ── 26. Public Image vs True Self (AL vs Lagna) ──
+function getALvsLagna(planets, lagnaIdx, arudhaLagna) {
+  if (!arudhaLagna) return null;
+  const lagnaSign = RASI_NAMES[lagnaIdx];
+  const alSign = arudhaLagna.rasi;
+  const alLord = RASI_LORD[arudhaLagna.rasiIdx];
+  const alLordStatus = planets[alLord]?.status || '';
+  const alLordH = planets[alLord]?.house || 0;
+
+  const lagnaMeaning = `True self: ${lagnaSign} — real personality, inner world, actual motivations`;
+  const alMeaning = `Public image: ${alSign} — how the world perceives them, reputation, social persona`;
+
+  let gap = '';
+  if (lagnaIdx !== arudhaLagna.rasiIdx) {
+    gap = `Real self (${lagnaSign}) differs from public image (${alSign}) — person may appear ${alSign}-natured to the world but feels very different inside`;
+  } else {
+    gap = `Lagna and Arudha Lagna aligned — inner self and public image are consistent, authentic presentation`;
+  }
+
+  return {
+    lagnaSign, alSign, alLord, alLordStatus, alLordH, gap,
+    summary: `${lagnaMeaning} | ${alMeaning} | ${gap}`
+  };
+}
+
+// ── 28. Breakpoint Years Engine ──
+function getBreakpointYears(planets, lagnaIdx, dasha, dob) {
+  const birthYear = new Date(dob).getFullYear();
+  const breakpoints = [];
+
+  // Major Dasha transitions
+  let cumYrs = 0;
+  dasha.dashaSequence?.forEach((ds, i) => {
+    const transitionAge = Math.round(cumYrs);
+    const transitionYear = birthYear + transitionAge;
+    if (transitionAge >= 15 && transitionAge <= 75) {
+      breakpoints.push({
+        type: 'Dasha Transition',
+        age: transitionAge, year: transitionYear,
+        desc: `Age ${transitionAge} (${transitionYear}): ${i > 0 ? dasha.dashaSequence[i-1]?.lord : '?'} → ${ds.lord} Dasha — major life shift`
+      });
+    }
+    cumYrs += ds.years;
+  });
+
+  // Planet maturity ages
+  const MATURITY = { Mars:28, Mercury:32, Jupiter:16, Venus:25, Saturn:36, Rahu:42, Ketu:48 };
+  for (const [planet, age] of Object.entries(MATURITY)) {
+    const year = birthYear + age;
+    breakpoints.push({
+      type: 'Planet Maturity',
+      age, year,
+      desc: `Age ${age} (${year}): ${planet} matures — ${planet} themes stabilize and integrate`
+    });
+  }
+
+  // Saturn returns (age ~29, ~58)
+  [29, 58].forEach(age => {
+    breakpoints.push({
+      type: 'Saturn Return',
+      age, year: birthYear + age,
+      desc: `Age ${age} (${birthYear + age}): Saturn Return — major restructuring of foundations, career, and responsibility`
+    });
+  });
+
+  breakpoints.sort((a, b) => a.age - b.age);
+  const upcoming = breakpoints.filter(b => b.year >= new Date().getFullYear()).slice(0, 5);
+
+  return {
+    allBreakpoints: breakpoints,
+    upcoming,
+    summary: `Key breakpoint years: ${upcoming.slice(0,3).map(b => `${b.year} (age ${b.age}): ${b.desc.split('—')[0].trim()}`).join(' | ')}`
+  };
+}
+
+// ── 22. Wealth Style Engine ──
+function getWealthStyle(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const style = [];
+
+  // Salary (stable employment): Saturn, Mercury, H6/H10
+  if ([10,6].includes(H('Saturn')) || [10,6].includes(H('Mercury'))) style.push('Salary/Service: disciplined, consistent income through employment');
+  // Business: Mercury, Mars, 3rd/7th/10th connection
+  const l3 = RASI_LORD[(lagnaIdx+2)%12], l10 = RASI_LORD[(lagnaIdx+9)%12];
+  if (H('Mercury')===7 || H('Mars')===3 || Math.abs((planets[l3]?.sid||0)-(planets[l10]?.sid||0))<15) style.push('Business/Trade: entrepreneurial, partnership-based income');
+  // Foreign: Rahu, H12, H9 link
+  if ([H('Rahu'),H(RASI_LORD[(lagnaIdx+11)%12])].includes(12) || [H('Rahu'),H(RASI_LORD[(lagnaIdx+8)%12])].includes(9)) style.push('Foreign income: money from abroad, international clients, or overseas employment');
+  // Inheritance: H8, H4
+  const l8 = RASI_LORD[(lagnaIdx+7)%12];
+  if ([1,4,7,10].includes(H(l8)) && !planets[l8]?.combust) style.push('Inheritance/Windfall: H8 lord strong — unexpected gains, family wealth');
+  // Speculation: Rahu H5, Moon H5
+  if (H('Rahu')===5 || H('Moon')===5) style.push('Speculation/Investments: risk-taking in finances, stock market tendency');
+  // Property: Mars, Moon, H4 strong
+  if (H('Mars')===4 || H('Moon')===4 || [1,4,7,10].includes(H(RASI_LORD[(lagnaIdx+3)%12]))) style.push('Property/Real estate: income through land and buildings');
+  // Creative/Art: Venus H2/H10
+  if ([2,10].includes(H('Venus')) && !planets.Venus?.combust) style.push('Creative/Arts: income through beauty, art, entertainment, luxury');
+
+  return {
+    styles: style,
+    primary: style[0] || 'General income through own effort',
+    summary: `Wealth comes through: ${style.join(' | ') || 'varied sources — chart shows multiple income paths'}`
+  };
+}
+
+// ── 21. Relationship Wound Engine ──
+function getRelationshipWounds(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const wounds = [];
+
+  // Abandonment wound: Moon H8/H12 + Saturn aspect + Ketu conjunct (2+)
+  const moonH = H('Moon');
+  let abandCount = 0;
+  if ([8,12].includes(moonH)) abandCount++;
+  if ((planets.Saturn?.aspects||[]).includes(moonH)) abandCount++;
+  if (Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10) abandCount++;
+  if (abandCount >= 2) wounds.push({ type: 'Abandonment', count: abandCount,
+    desc: 'Abandonment wound — tendency to expect people to leave, difficulty trusting continuity in relationships' });
+
+  // Rejection wound: Venus in enemy sign + Saturn aspect + H7 afflicted (2+)
+  let rejCount = 0;
+  if (planets.Venus?.status.includes('Enemy') || planets.Venus?.status.includes('Debilitated')) rejCount++;
+  if ((planets.Saturn?.aspects||[]).includes(H('Venus'))) rejCount++;
+  if ([6,8,12].includes(H('Venus'))) rejCount++;
+  if (rejCount >= 2) wounds.push({ type: 'Rejection', count: rejCount,
+    desc: 'Rejection wound — fear of not being chosen or valued, over-giving in relationships to avoid abandonment' });
+
+  // Betrayal wound: Rahu-Venus + 8th house involvement + Saturn H7 (2+)
+  let betCount = 0;
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10) betCount++;
+  if ([8,12].includes(H('Venus'))) betCount++;
+  if (H('Saturn')===7) betCount++;
+  if (betCount >= 2) wounds.push({ type: 'Betrayal', count: betCount,
+    desc: 'Betrayal wound — guards emotions carefully after being hurt, tests partners repeatedly before trusting' });
+
+  // Control wound: Saturn dominant + H4 afflicted + Sun H12/H6/H8 (2+)
+  let ctrlCount = 0;
+  if (planets.Saturn?.bala >= 70) ctrlCount++;
+  if ([6,8,12].includes(H(RASI_LORD[(lagnaIdx+3)%12]))) ctrlCount++;
+  if ([6,8,12].includes(H('Sun'))) ctrlCount++;
+  if (ctrlCount >= 2) wounds.push({ type: 'Control', count: ctrlCount,
+    desc: 'Control wound — either experienced controlling relationships or compensates by over-controlling; fear of vulnerability' });
+
+  return {
+    wounds,
+    hasWounds: wounds.length > 0,
+    summary: wounds.length
+      ? `Relationship wounds (${wounds.length}): ${wounds.map(w=>`${w.type} (${w.count} indicators): ${w.desc}`).join(' | ')}`
+      : 'No major relationship wounds confirmed (below 2-indicator threshold)'
+  };
+}
+
+// ── 24. Power Engine ──
+function getPowerEngine(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const powerAreas = [];
+
+  // Sun strong in Kendra
+  if ([1,4,7,10].includes(H('Sun')) && !planets.Sun?.combust) powerAreas.push(`Leadership/Authority (Sun H${H('Sun')}) — natural command, influence over others`);
+  // Mars in Kendra
+  if ([1,4,7,10].includes(H('Mars')) && planets.Mars?.status.includes('Exalted')) powerAreas.push(`Physical/Competitive power (Mars exalted H${H('Mars')}) — dominates through action, athletic/military strength`);
+  // Saturn exalted/own + Kendra
+  if ((planets.Saturn?.status.includes('Exalted')||planets.Saturn?.status.includes('Own')) && [1,4,7,10].includes(H('Saturn'))) powerAreas.push(`Organizational power (Saturn H${H('Saturn')}) — controls systems, institutions, long-term structures`);
+  // H10/H6/H3 strength
+  const l10 = RASI_LORD[(lagnaIdx+9)%12];
+  if ([1,4,7,10].includes(H(l10))) powerAreas.push(`Career power (10th lord H${H(l10)} strong) — professional authority, reputation commands respect`);
+  // Yogas
+  if (yogas.some(y=>y.name.includes('Ruchaka'))) powerAreas.push('Competitive dominance (Ruchaka Yoga) — wins battles, conquers opponents');
+  if (yogas.some(y=>y.name.includes('Hamsa'))) powerAreas.push('Spiritual authority (Hamsa Yoga) — wisdom commands respect, teaching power');
+
+  return {
+    powerAreas,
+    summary: powerAreas.length
+      ? `Power domains: ${powerAreas.join(' | ')}`
+      : 'Power comes through quiet persistence rather than visible dominance'
+  };
+}
+
+// ── 25. Fear Engine ──
+function getFearEngine(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const fears = [];
+
+  // Fear of failure/authority: Saturn H1/H4/H10 + weak Sun
+  if (H('Saturn')===1 || (planets.Saturn?.aspects||[]).includes(1)) fears.push('Fear of failure/judgment — Saturn on Lagna creates self-criticism and fear of not meeting expectations');
+  // Fear of abandonment: Moon afflicted
+  if ((planets.Saturn?.aspects||[]).includes(H('Moon')) || [8,12].includes(H('Moon'))) fears.push('Fear of abandonment — Moon under pressure creates deep insecurity about being left or forgotten');
+  // Fear of intimacy: Ketu H7 or Venus in H8
+  if (H('Ketu')===7 || [8,12].includes(H('Venus'))) fears.push('Fear of deep intimacy — Ketu/Venus placement creates protective emotional distance');
+  // Fear of poverty: H2 or H11 lord weak
+  const l2 = RASI_LORD[(lagnaIdx+1)%12], l11 = RASI_LORD[(lagnaIdx+10)%12];
+  if ([6,8,12].includes(H(l2)) && planets[l2]?.bala < 40) fears.push('Fear of financial insecurity — wealth lords weak creates anxiety around money');
+  // Fear of change: Fixed modality dominant + Saturn H4
+  if (planets.Saturn?.bala >= 70 && (H('Saturn')===4 || H('Saturn')===1)) fears.push('Fear of change/loss of control — strong Saturn creates rigidity and resistance to the unknown');
+
+  return {
+    fears,
+    summary: fears.length
+      ? `Core fears: ${fears.join(' | ')}`
+      : 'No dominant fear patterns identified — Moon and Saturn relatively unafflicted'
+  };
+}
+
+// ── 3. Nakshatra Deep Engine ──
+function getNakshatraDeepAnalysis(planets, nakshatra) {
+  const moonNak = nakshatra;
+  const NAK_PSYCH = {
+    'Ashwini': 'quick starter, healing ability, impatient, needs freedom',
+    'Bharani': 'intense transformations, creative force, holds grudges, powerful',
+    'Krittika': 'sharp focus, critical mind, nurturing but cutting, spiritual fire',
+    'Rohini': 'love of beauty/luxury, sensual, stubborn about values, magnetic',
+    'Mrigashira': 'eternal seeker, curious mind, restless, finds through searching',
+    'Ardra': 'storms and renewal, raw intelligence, goes through destruction to rebuild',
+    'Punarvasu': 'return and renewal, philosophical, generous, needs home base',
+    'Pushya': 'nourishing others, disciplined devotion, seeks wisdom, protective',
+    'Ashlesha': 'serpent wisdom, perceptive, intense, can be manipulative or deeply healing',
+    'Magha': 'royal nature, pride in lineage, leadership, ancestral karma strong',
+    'Purva Phalguni': 'pleasure seeker, creative, love-focused, artistic, needs enjoyment',
+    'Uttara Phalguni': 'patron/protector, giving after receiving, mature love, seeks stability',
+    'Hasta': 'skilled hands, adaptable, clever, healing through touch and craft',
+    'Chitra': 'artistic vision, perfectionist, builds beautiful things, needs recognition',
+    'Swati': 'independent, dispersed energy, trade-focused, flexible like wind',
+    'Vishakha': 'focused ambition, two paths (spiritual/material), intense purpose',
+    'Anuradha': 'devotion and friendship, succeeds far from birthplace, seeks true connection',
+    'Jyeshtha': 'eldest sibling energy, protects others, sharp tongue, complex emotions',
+    'Mula': 'goes to the root, destroys to rebuild, spiritual seeker, transformative',
+    'Purva Ashadha': 'invincible determination, water energy, purifies through truth',
+    'Uttara Ashadha': 'final victory after long effort, elephantine patience, spiritual warrior',
+    'Shravana': 'listening and learning, media, preserves wisdom, travels for knowledge',
+    'Dhanishtha': 'wealth through music/rhythm, Mars-Saturn energy, ambitious and lonely',
+    'Shatabhisha': 'healer/scientist, secretive, unconventional, sees hidden patterns',
+    'Purva Bhadrapada': 'dual nature (fierce/gentle), mystical, sacrifices for vision',
+    'Uttara Bhadrapada': 'depth of wisdom, controls rain/nourishment, patience of serpent',
+    'Revati': 'nourishing journey, final star, compassionate, walks others home'
+  };
+
+  const psychology = NAK_PSYCH[moonNak.name] || 'deep psychological patterns from this nakshatra';
+  const lordMeaning = `Nakshatra lord ${moonNak.lord} — this planet's condition shapes the core emotional reality`;
+
+  return {
+    nakshatra: moonNak.name,
+    lord: moonNak.lord,
+    pada: moonNak.pada,
+    gana: moonNak.gana,
+    nadi: moonNak.nadi,
+    psychology,
+    lordMeaning,
+    summary: `${moonNak.name} Nakshatra psychology: ${psychology} | Lord: ${moonNak.lord} | Pada ${moonNak.pada} | Gana: ${moonNak.gana} | Nadi: ${moonNak.nadi}`
+  };
+}
+
+// ── 29. Peak Power Years Engine ──
+function getPeakPowerYears(planets, lagnaIdx, dasha, dob) {
+  const birthYear = new Date(dob).getFullYear();
+  const peakWindows = [];
+  const H = name => planets[name]?.house || 0;
+
+  // Find dasha periods where the lord is strong and activates H10/H1/H11
+  dasha.dashaSequence?.forEach(ds => {
+    const lord = ds.lord;
+    if (!planets[lord]) return;
+    const lordH = H(lord);
+    const lordBala = planets[lord]?.bala || 0;
+    const isStrong = lordBala >= 60 || planets[lord]?.status.includes('Exalted') || planets[lord]?.status.includes('Own');
+    const activatesPower = [1,3,6,10,11].includes(lordH);
+
+    if (isStrong && activatesPower) {
+      const startAge = Math.round((new Date(ds.startDate) - new Date(dob)) / (365.25*24*3600*1000));
+      const endAge = Math.round((new Date(ds.endDate) - new Date(dob)) / (365.25*24*3600*1000));
+      peakWindows.push({
+        lord, period: `${ds.startDate.slice(0,4)}–${ds.endDate.slice(0,4)}`,
+        ageRange: `${startAge}–${endAge}`,
+        reason: `${lord} in H${lordH} (${planets[lord]?.status.split(' ')[0]}, Bala ${lordBala}) — activates authority/career`,
+        score: lordBala + (planets[lord]?.status.includes('Exalted') ? 20 : 0)
+      });
+    }
+  });
+
+  peakWindows.sort((a,b) => b.score - a.score);
+  return {
+    peaks: peakWindows.slice(0, 4),
+    summary: peakWindows.length
+      ? `Peak power years: ${peakWindows.slice(0,3).map(p=>`${p.period} (age ${p.ageRange}) — ${p.reason.split('—')[0].trim()}`).join(' | ')}`
+      : 'Power builds gradually — no single peak period stands out sharply'
+  };
+}
+
+module.exports.buildHouseStoryEngine = buildHouseStoryEngine;
+module.exports.getDispositorChain = getDispositorChain;
+module.exports.getPlanetClusters = getPlanetClusters;
+module.exports.getElementBalance = getElementBalance;
+module.exports.getModalityEngine = getModalityEngine;
+module.exports.getALvsLagna = getALvsLagna;
+module.exports.getBreakpointYears = getBreakpointYears;
+module.exports.getWealthStyle = getWealthStyle;
+module.exports.getRelationshipWounds = getRelationshipWounds;
+module.exports.getPowerEngine = getPowerEngine;
+module.exports.getFearEngine = getFearEngine;
+module.exports.getNakshatraDeepAnalysis = getNakshatraDeepAnalysis;
+module.exports.getPeakPowerYears = getPeakPowerYears;
+
+// ═══════════════════════════════════════════════════
+// ADVANCED ENGINE — BATCH 9: LIFE DOMAIN ENGINES
+// ═══════════════════════════════════════════════════
+
+// ── Parent Karma Engine (Father + Mother separate) ──
+function getParentKarmaEngine(planets, lagnaIdx, dasha, allYogas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+
+  // FATHER ENGINE: Sun + H9 + H9 lord
+  const h9Sign = (lagnaIdx + 8) % 12;
+  const l9 = RASI_LORD[h9Sign];
+  const sunH = H('Sun'), sunSt = ST('Sun');
+  const l9H = H(l9), l9St = ST(l9);
+  const fatherFactors = [];
+
+  if ([6,8,12].includes(sunH)) fatherFactors.push(`Sun in H${sunH} — father relationship difficult or distant`);
+  if (sunSt.includes('Debilitated')) fatherFactors.push('Sun debilitated — father authority weakened or absent');
+  if ((planets.Saturn?.aspects||[]).includes(sunH)) fatherFactors.push('Saturn aspects Sun — father figure cold, strict, or burden-bearing');
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Sun?.sid||0))<10) fatherFactors.push('Rahu conjunct Sun — father unconventional or foreign element in father relationship');
+  if ([6,8,12].includes(l9H)) fatherFactors.push(`9th lord ${l9} in H${l9H} — father luck or lineage faces obstruction`);
+  if (l9St.includes('Exalted')||l9St.includes('Own')) fatherFactors.push(`9th lord ${l9} strong — father is source of blessing and support`);
+
+  // Father dasha triggers
+  const fatherDashas = dasha.dashaSequence?.filter(ds => ds.lord === 'Sun' || ds.lord === l9)
+    .map(ds => `${ds.lord} Dasha (${ds.startDate.slice(0,4)}–${ds.endDate.slice(0,4)}) — father-related events`)
+    .slice(0,2) || [];
+
+  // MOTHER ENGINE: Moon + H4 + H4 lord
+  const h4Sign = (lagnaIdx + 3) % 12;
+  const l4 = RASI_LORD[h4Sign];
+  const moonH = H('Moon'), moonSt = ST('Moon');
+  const l4H = H(l4), l4St = ST(l4);
+  const motherFactors = [];
+
+  if ([6,8,12].includes(moonH)) motherFactors.push(`Moon in H${moonH} — mother emotionally burdened or physically distant`);
+  if (moonSt.includes('Debilitated')) motherFactors.push('Moon debilitated — mother relationship source of emotional pain');
+  if ((planets.Saturn?.aspects||[]).includes(moonH)) motherFactors.push('Saturn aspects Moon — mother cold or duty-bound, emotional warmth limited');
+  if (Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10) motherFactors.push('Ketu conjunct Moon — mother-child separation or feeling of incompleteness with mother');
+  if ([6,8,12].includes(l4H)) motherFactors.push(`4th lord ${l4} in H${l4H} — home environment difficult, property complications`);
+  if (l4St.includes('Exalted')||l4St.includes('Own')) motherFactors.push(`4th lord ${l4} strong — mother is protector and nourisher`);
+
+  const fatherQuality = fatherFactors.filter(f=>f.includes('difficult')||f.includes('absent')||f.includes('strict')||f.includes('obstruction')).length >= 2
+    ? 'Challenging father relationship (2+ indicators)' : 'Father relationship mixed or supportive';
+  const motherQuality = motherFactors.filter(f=>f.includes('burdened')||f.includes('pain')||f.includes('cold')||f.includes('difficult')).length >= 2
+    ? 'Challenging mother relationship (2+ indicators)' : 'Mother relationship mixed or nourishing';
+
+  return {
+    father: { factors: fatherFactors, quality: fatherQuality, dashas: fatherDashas,
+      summary: `Father karma: ${fatherQuality} | ${fatherFactors.join(' | ') || 'Father relationship supportive — Sun and H9 relatively well-placed'}` },
+    mother: { factors: motherFactors, quality: motherQuality,
+      summary: `Mother karma: ${motherQuality} | ${motherFactors.join(' | ') || 'Mother relationship nourishing — Moon and H4 relatively healthy'}` },
+    summary: `FATHER: ${fatherQuality} | MOTHER: ${motherQuality}`
+  };
+}
+
+// ── Business vs Job Engine ──
+function getBusinessVsJobEngine(planets, lagnaIdx, dasha, allYogas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  let jobScore = 0, businessScore = 0;
+  const jobIndicators = [], businessIndicators = [];
+
+  // Job indicators: H6, H10, Saturn strong and regular
+  const l6 = RASI_LORD[(lagnaIdx+5)%12], l10 = RASI_LORD[(lagnaIdx+9)%12];
+  if ([1,4,7,10].includes(H('Saturn'))) { jobScore+=2; jobIndicators.push('Saturn in Kendra — disciplined service orientation'); }
+  if ([1,4,7,10].includes(H(l10))) { jobScore+=2; jobIndicators.push(`10th lord ${l10} in Kendra — career in established institutions`); }
+  if (H('Saturn')===10||H('Saturn')===6) { jobScore+=2; jobIndicators.push(`Saturn in H${H('Saturn')} — service/employment strongly indicated`); }
+  if (ST('Saturn').includes('Exalted')||ST('Saturn').includes('Own')) { jobScore++; jobIndicators.push('Saturn strong — reliable employee, rises through seniority'); }
+
+  // Business indicators: H7, H11, Mercury, Rahu, 3rd lord
+  const l7 = RASI_LORD[(lagnaIdx+6)%12], l3 = RASI_LORD[(lagnaIdx+2)%12];
+  if ([1,4,7,10].includes(H('Mercury'))) { businessScore+=2; businessIndicators.push('Mercury in Kendra — sharp business mind'); }
+  if ([7,11].includes(H('Rahu'))) { businessScore+=2; businessIndicators.push(`Rahu in H${H('Rahu')} — unconventional business path, partnerships`); }
+  if ([7,11].includes(H(l3))) { businessScore++; businessIndicators.push(`3rd lord ${l3} in H${H(l3)} — initiative and self-employment drive`); }
+  if ([1,4,7,10].includes(H(l7))) { businessScore++; businessIndicators.push(`7th lord ${l7} in Kendra — business partnerships favored`); }
+  if (allYogas.some(y=>y.name.includes('Ruchaka'))) { businessScore+=2; businessIndicators.push('Ruchaka Yoga — self-made leadership, independent enterprise'); }
+  if (ST('Mercury').includes('Exalted')) { businessScore+=2; businessIndicators.push('Mercury exalted — exceptional business acumen'); }
+  if (H('Jupiter')===11||(planets.Jupiter?.aspects||[]).includes(11)) { businessScore++; businessIndicators.push('Jupiter activates H11 — income through multiple channels'); }
+
+  const verdict = businessScore > jobScore + 1 ? 'Business/Self-employment more suitable'
+    : jobScore > businessScore + 1 ? 'Employment/Service career more suitable'
+    : 'Hybrid path — both service and independent projects can work';
+
+  return {
+    jobScore, businessScore, verdict, jobIndicators, businessIndicators,
+    summary: `${verdict} | Job score: ${jobScore} | Business score: ${businessScore} | Job: ${jobIndicators.join(', ')||'weak'} | Business: ${businessIndicators.join(', ')||'weak'}`
+  };
+}
+
+// ── Loss Engine (where energy leaks) ──
+function getLossEngine(planets, lagnaIdx, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const leaks = [];
+
+  const l12 = RASI_LORD[(lagnaIdx+11)%12];
+  // Money leaks
+  if ([6,8,12].includes(H(RASI_LORD[(lagnaIdx+1)%12]))) leaks.push('Money leak: 2nd lord in dusthana — wealth flows out faster than it accumulates');
+  if (H(l12)===2) leaks.push('Money leak: 12th lord in H2 — spending exceeds saving, careful budgeting needed');
+  if (planets.Ketu && [2,11].includes(H('Ketu'))) leaks.push('Money leak: Ketu in wealth house — irregular earnings, detachment from accumulation');
+  // Relationship leaks
+  if (planets.Venus?.combust) leaks.push('Relationship leak: Venus combust — love relationships feel suppressed or confused, energy dissipated');
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10) leaks.push('Relationship leak: Rahu-Venus — obsessive attractions drain emotional energy');
+  // Mental/energy leaks
+  const moonH = H('Moon');
+  if ([6,8,12].includes(moonH)) leaks.push(`Mental energy leak: Moon in H${moonH} — emotional processing consumes significant energy, rest needed`);
+  if (H('Saturn')===12) leaks.push('Spiritual/material leak: Saturn in H12 — energy invested in isolation, foreign places, or hidden work');
+  // Physical leaks
+  if (H('Mars')===12) leaks.push('Physical energy leak: Mars in H12 — strength spent in hidden/foreign contexts, restless sleep');
+  // Combustion of benefics
+  const combustBenefics = ['Jupiter','Venus','Moon'].filter(n => planets[n]?.combust);
+  if (combustBenefics.length > 0) leaks.push(`Benefic power leak: ${combustBenefics.join('+')} combust — natural gifts suppressed`);
+
+  return {
+    leaks,
+    summary: leaks.length ? `Energy leaks detected (${leaks.length}): ${leaks.join(' | ')}` : 'No major energy leaks — chart retains its gains relatively well'
+  };
+}
+
+// ── Reputation / Fame Engine ──
+function getReputationEngine(planets, lagnaIdx, dasha, allYogas, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const indicators = [];
+  let score = 0;
+
+  const l10 = RASI_LORD[(lagnaIdx+9)%12];
+  const amk = karakas?.Amatyakaraka;
+  const ak = karakas?.Atmakaraka;
+
+  // Fame indicators
+  if (ST('Sun').includes('Exalted')||ST('Sun').includes('Own')) { score+=15; indicators.push('Sun exalted/own — natural authority, public visibility'); }
+  if ([1,4,7,10].includes(H('Rahu'))) { score+=10; indicators.push(`Rahu in H${H('Rahu')} — rises to public prominence, unconventional fame`); }
+  if ([1,4,7,10].includes(H(l10))) { score+=15; indicators.push(`10th lord ${l10} in Kendra — career achievements become widely known`); }
+  if (allYogas.some(y=>y.name.includes('Pancha Mahapurusha')||y.name.includes('Raja')||y.name.includes('Lakshmi'))) { score+=15; indicators.push('Raja/Lakshmi Yoga — deserved recognition, authority'); }
+  if (amk && (ST(amk).includes('Exalted')||ST(amk).includes('Own'))) { score+=10; indicators.push(`Amatyakaraka ${amk} strong — career excellence brings recognition`); }
+  if ((planets.Jupiter?.aspects||[]).includes(10)||H('Jupiter')===10) { score+=10; indicators.push('Jupiter influences H10 — respected in profession'); }
+  // Scandal risk
+  if ([7,8].includes(H('Rahu'))) indicators.push('Caution: Rahu in H7/H8 — reputation risk through relationships or hidden matters');
+  if (H('Saturn')===10) { score+=5; indicators.push('Saturn in H10 — slow rise, earned reputation, lasting legacy'); }
+
+  score = Math.min(100, score);
+  const level = score >= 60 ? 'High fame potential' : score >= 35 ? 'Moderate public presence' : 'Private person — fame not strongly indicated';
+
+  return {
+    score, level, indicators,
+    summary: `Reputation/Fame: ${level} (${score}/100) | ${indicators.join(' | ')}`
+  };
+}
+
+// ── In-law Karma Engine ──
+function getInLawKarmaEngine(planets, lagnaIdx, upapadaLagna, navamsa) {
+  const H = name => planets[name]?.house || 0;
+  const h8FromLagna = (lagnaIdx + 7) % 12; // 8th from Lagna = in-laws (spouse family = 7th house from 7th = 1st, but 8th shows in-law dynamics)
+  // Classical: In-laws seen from H8 (2nd from 7th = 8th from Lagna)
+  const l8 = RASI_LORD[h8FromLagna];
+  const l8H = H(l8);
+  const l8St = planets[l8]?.status || '';
+  const indicators = [];
+
+  if ([6,8,12].includes(l8H)) indicators.push(`8th lord ${l8} in H${l8H} — in-law relationship involves transformation, conflict possible`);
+  if (l8St.includes('Exalted')||l8St.includes('Own')) indicators.push(`8th lord strong — in-laws are powerful family with resources`);
+  if ((planets.Saturn?.aspects||[]).includes(8)) indicators.push('Saturn aspects H8 — in-law relationship involves duty, distance, or elder family authority');
+  if ((planets.Mars?.aspects||[]).includes(8)) indicators.push('Mars aspects H8 — in-law friction, property disputes possible');
+  if (upapadaLagna) {
+    const ulLord = RASI_LORD[upapadaLagna.rasiIdx];
+    if ([6,8,12].includes(H(ulLord))) indicators.push(`UL lord ${ulLord} in H${H(ulLord)} — marriage quality affected by in-law interference`);
+  }
+
+  const quality = indicators.filter(i=>i.includes('conflict')||i.includes('friction')||i.includes('interference')).length >= 2
+    ? 'In-law relationship likely challenging' : 'In-law relationship mixed or supportive';
+
+  return {
+    l8, l8H, l8St, indicators, quality,
+    summary: `In-law karma: ${quality} | ${indicators.join(' | ') || 'No major in-law conflict indicators'}`
+  };
+}
+
+// ── Sibling Karma Engine ──
+function getSiblingKarmaEngine(planets, lagnaIdx, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const h3Sign = (lagnaIdx + 2) % 12;
+  const l3 = RASI_LORD[h3Sign];
+  const l3H = H(l3), l3St = ST(l3);
+  const indicators = [];
+
+  const h3Occupants = Object.entries(planets).filter(([,p])=>p.house===3).map(([n])=>n);
+  if (h3Occupants.length > 0) indicators.push(`H3 contains ${h3Occupants.join(',')} — sibling themes strongly activated`);
+  if ([6,8,12].includes(l3H)) indicators.push(`3rd lord ${l3} in H${l3H} — sibling relationship involves struggle or distance`);
+  if (l3St.includes('Exalted')||l3St.includes('Own')) indicators.push(`3rd lord strong — supportive sibling dynamic, courage in communication`);
+  const marsH = H('Mars');
+  if (marsH===3) indicators.push('Mars in H3 — competitive with siblings, strong-willed in communication');
+  if ([6,8,12].includes(marsH) && marsH!==3) indicators.push(`Mars in H${marsH} — energy conflicts with siblings or courage blocked`);
+  if ((planets.Jupiter?.aspects||[]).includes(3)) indicators.push('Jupiter aspects H3 — sibling relationship eventually becomes supportive');
+
+  return {
+    l3, l3H, l3St, h3Occupants, indicators,
+    summary: indicators.join(' | ') || 'Sibling relationship — 3rd house needs further analysis from house lord'
+  };
+}
+
+// ── Debt / Litigation Engine ──
+function getDebtLitigationEngine(planets, lagnaIdx, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const indicators = [];
+  let debtRisk = 0, litigationRisk = 0;
+
+  const l6 = RASI_LORD[(lagnaIdx+5)%12], l8 = RASI_LORD[(lagnaIdx+7)%12];
+  const l6H = H(l6), l8H = H(l8);
+
+  // Debt indicators
+  if ([1,4,7,10].includes(l6H)) { debtRisk+=15; indicators.push(`6th lord ${l6} in Kendra — service debts, loans, financial obligations prominent`); }
+  if (H('Saturn')===6||H('Saturn')===12) { debtRisk+=10; indicators.push(`Saturn in H${H('Saturn')} — chronic debt tendency, slow repayment`); }
+  if (H('Rahu')===6) { debtRisk+=15; indicators.push('Rahu in H6 — debt through unconventional means, foreign loans possible'); }
+  if ((planets.Mars?.aspects||[]).includes(6)) { debtRisk+=10; indicators.push('Mars aspects H6 — aggressive debt collection or financial disputes'); }
+
+  // Litigation indicators
+  if (H('Mars')===6||(planets.Mars?.aspects||[]).includes(7)) { litigationRisk+=15; indicators.push('Mars activates H6/H7 — legal disputes with partners or enemies'); }
+  if (H('Rahu')===7||(planets.Saturn?.aspects||[]).includes(7)) { litigationRisk+=10; indicators.push('Rahu/Saturn influence on H7 — partnership disputes possible'); }
+  if (H(l6)===7||H(l6)===6) { litigationRisk+=10; indicators.push(`6th lord in H${H(l6)} — enemy activity, legal exposure`); }
+
+  // Active periods
+  const dangerPeriods = dasha.antardashas?.filter(a => {
+    const aLord = a.lord;
+    return H(aLord)===6 || H(aLord)===8 || aLord===l6 || aLord==='Rahu' || aLord==='Mars';
+  }).map(a => `${dasha.current?.lord}–${a.lord} (${a.startDate.slice(0,7)})`)
+    .slice(0,2) || [];
+
+  return {
+    debtRisk: Math.min(100, debtRisk),
+    litigationRisk: Math.min(100, litigationRisk),
+    indicators, dangerPeriods,
+    summary: `Debt risk: ${debtRisk}/100 | Litigation risk: ${litigationRisk}/100 | ${indicators.join(' | ')||'No major debt/litigation indicators'} | Active periods: ${dangerPeriods.join(', ')||'none now'}`
+  };
+}
+
+// ── Repeated Karma Detection (theme across D1/D9/D10/D7) ──
+function getRepeatedKarmaDetection(planets, lagnaIdx, navamsa, d10, d7) {
+  const H = name => planets[name]?.house || 0;
+  const patterns = [];
+
+  // Marriage struggle in D1 + D9
+  const l7D1 = RASI_LORD[(lagnaIdx+6)%12];
+  const l7D1InDust = [6,8,12].includes(H(l7D1));
+  const d9LagnaIdx = navamsa?.lagna?.rasiIdx || 0;
+  const l7D9 = RASI_LORD[(d9LagnaIdx+6)%12];
+  const l7D9InDust = navamsa ? [6,8,12].includes(navamsa.planets?.[l7D9]?.house) : false;
+  if (l7D1InDust && l7D9InDust)
+    patterns.push({ theme: 'Marriage challenges', certainty: 'DESTINY PATTERN', count: 2,
+      desc: 'Marriage challenges repeat in D1 AND D9 — this is a deep karmic pattern, not just a placement. Marriage requires conscious work.' });
+
+  // Career strength in D1 + D10
+  const l10D1 = RASI_LORD[(lagnaIdx+9)%12];
+  const l10D1Strong = !([6,8,12].includes(H(l10D1))) && !planets[l10D1]?.combust;
+  const l10D10 = d10 ? RASI_LORD[(d10.lagnaRasiIdx+9)%12] : null;
+  const l10D10Strong = d10 && l10D10 ? !([6,8,12].includes(d10.planets?.[l10D10]?.house)) : false;
+  if (l10D1Strong && l10D10Strong)
+    patterns.push({ theme: 'Career strength', certainty: 'DESTINY PATTERN', count: 2,
+      desc: 'Career strength repeats in D1 AND D10 — professional success is a destiny-level theme. Confidence in chosen career is warranted.' });
+
+  // Wealth in D1 + D9
+  const l2D1 = RASI_LORD[(lagnaIdx+1)%12];
+  const l2D1Strong = !([6,8,12].includes(H(l2D1)));
+  const d9VenusGood = navamsa?.planets?.Venus && !navamsa.planets.Venus.status.includes('Debilitated');
+  if (l2D1Strong && d9VenusGood)
+    patterns.push({ theme: 'Wealth accumulation possible', certainty: 'ELEVATED', count: 2,
+      desc: 'Wealth promise in D1 confirmed by D9 Venus — financial themes are supported across charts.' });
+
+  return {
+    patterns,
+    destinyPatterns: patterns.filter(p=>p.certainty==='DESTINY PATTERN'),
+    summary: patterns.length
+      ? patterns.map(p=>`[${p.certainty}] ${p.theme}: ${p.desc}`).join(' | ')
+      : 'No strongly repeating karma patterns detected across divisional charts'
+  };
+}
+
+module.exports.getParentKarmaEngine = getParentKarmaEngine;
+module.exports.getBusinessVsJobEngine = getBusinessVsJobEngine;
+module.exports.getLossEngine = getLossEngine;
+module.exports.getReputationEngine = getReputationEngine;
+module.exports.getInLawKarmaEngine = getInLawKarmaEngine;
+module.exports.getSiblingKarmaEngine = getSiblingKarmaEngine;
+module.exports.getDebtLitigationEngine = getDebtLitigationEngine;
+module.exports.getRepeatedKarmaDetection = getRepeatedKarmaDetection;
+
+// ═══════════════════════════════════════════════════
+// ADVANCED ENGINE — BATCH 10: DEEP KARMA ENGINES
+// ═══════════════════════════════════════════════════
+
+// ── Kula Devata Recovery Engine ──
+function getKulaDevataEngine(planets, lagnaIdx, karakas) {
+  const ak = karakas?.Atmakaraka;
+  const H = name => planets[name]?.house || 0;
+  // Map AK to deity
+  const AK_DEITY = {
+    Sun: { deity: 'Shiva / Surya', temple: 'Chidambaram Natarajar Temple (Tamil Nadu)', mantra: 'Om Namah Shivaya', day: 'Sunday' },
+    Moon: { deity: 'Devi / Shakti (Amman)', temple: 'Madurai Meenakshi Amman Temple', mantra: 'Om Aim Hreem Shreem', day: 'Monday' },
+    Mars: { deity: 'Murugan / Skanda', temple: 'Palani Murugan Temple (Tamil Nadu)', mantra: 'Om Saravanabhava', day: 'Tuesday' },
+    Mercury: { deity: 'Vishnu', temple: 'Srirangam Ranganathaswamy Temple', mantra: 'Om Namo Narayanaya', day: 'Wednesday' },
+    Jupiter: { deity: 'Dakshinamurthy / Brihaspati', temple: 'Alangudi Guru Temple (Navagraha)', mantra: 'Om Graam Greem Graum Sah Guruve Namah', day: 'Thursday' },
+    Venus: { deity: 'Lakshmi', temple: 'Mahalakshmi Temple Vellore', mantra: 'Om Shreem Mahalakshmiyei Namah', day: 'Friday' },
+    Saturn: { deity: 'Ayyanar / Shani / Kala Bhairava', temple: 'Thirunallar Saniswara Temple (Tamil Nadu)', mantra: 'Om Praam Preem Praum Sah Shanaischaraya Namah', day: 'Saturday' },
+    Rahu: { deity: 'Durga / Chinnamasta', temple: 'Thiruvannur Rahu Temple (Tamil Nadu)', mantra: 'Om Raam Rahave Namah', day: 'Saturday' },
+    Ketu: { deity: 'Ganesha / Moksha deity', temple: 'Keezhperumpallam Ketu Temple (Navagraha)', mantra: 'Om Gam Ganapataye Namah', day: 'Tuesday' },
+  };
+
+  // 9th house lord deity
+  const l9 = RASI_LORD[(lagnaIdx+8)%12];
+  const l9Deity = AK_DEITY[l9] || AK_DEITY[ak] || AK_DEITY['Jupiter'];
+  const akDeity = ak ? AK_DEITY[ak] : null;
+
+  // Ketu house for spiritual anchor
+  const ketuH = H('Ketu');
+  let ancestralDeity = akDeity || l9Deity;
+
+  return {
+    primaryDeity: ancestralDeity?.deity || 'Ganesha',
+    temple: ancestralDeity?.temple || 'Local Ganesha temple',
+    mantra: ancestralDeity?.mantra || 'Om Gam Ganapataye Namah',
+    day: ancestralDeity?.day || 'Tuesday',
+    sourceAK: ak,
+    source9thLord: l9,
+    summary: `Kula Devata: ${ancestralDeity?.deity} (from AK ${ak} + 9th lord ${l9}) | Temple: ${ancestralDeity?.temple} | Mantra: ${ancestralDeity?.mantra} | Day: ${ancestralDeity?.day}`
+  };
+}
+
+// ── Final Unfinished Sentence Engine ──
+function getFinalUnfinishedSentence(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const sentences = [];
+
+  const moonSatAspect = (planets.Saturn?.aspects||[]).includes(H('Moon'));
+  const moonH = H('Moon');
+  if (moonSatAspect || [6,8,12].includes(moonH))
+    sentences.push({ pattern: 'Moon-Saturn', sentence: '"I was never truly held or seen for who I am."', weight: moonSatAspect ? 80 : 60 });
+
+  const rahuNearVenus = Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0)) < 10;
+  const venusH = H('Venus');
+  if (rahuNearVenus || [8,12].includes(venusH))
+    sentences.push({ pattern: 'Venus-Rahu', sentence: '"I kept chasing love that slipped away."', weight: rahuNearVenus ? 85 : 65 });
+
+  const sunH = H('Sun');
+  const ketuH = H('Ketu');
+  if (Math.abs((planets.Ketu?.sid||0)-(planets.Sun?.sid||0)) < 10 || [6,8,12].includes(sunH))
+    sentences.push({ pattern: 'Sun-Ketu', sentence: '"I was unseen — my light never fully recognized."', weight: 75 });
+
+  const satKetuClose = Math.abs((planets.Saturn?.sid||0)-(planets.Ketu?.sid||0)) < 15;
+  if (satKetuClose || (planets.Saturn?.bala >= 70 && [6,8,12].includes(H('Saturn'))))
+    sentences.push({ pattern: 'Saturn-Ketu', sentence: '"I carried too much that was never mine to carry."', weight: 80 });
+
+  const marsH = H('Mars');
+  if ([1,5,9,10].includes(ketuH) && [1,6,8].includes(marsH))
+    sentences.push({ pattern: 'Mars-Ketu', sentence: '"I fought hard but could not complete what I started."', weight: 70 });
+
+  sentences.sort((a,b) => b.weight - a.weight);
+  const primary = sentences[0] || { sentence: '"I did not fully live the life I came for."', weight: 50 };
+
+  return {
+    primarySentence: primary.sentence,
+    pattern: primary.pattern,
+    weight: primary.weight,
+    allSentences: sentences,
+    summary: `Final Unfinished Sentence: ${primary.sentence} (pattern: ${primary.pattern||'general'}, weight: ${primary.weight}/100)`
+  };
+}
+
+// ── Soul Exhaustion Index ──
+function getSoulExhaustionIndex(planets, lagnaIdx) {
+  const H = name => planets[name]?.house || 0;
+  let score = 0;
+  const indicators = [];
+
+  if (planets.Saturn?.bala >= 65) { score += 20; indicators.push('Saturn dominant — carries heavy burden'); }
+  if ([6,8,12].includes(H('Ketu'))) { score += 20; indicators.push(`Ketu in H${H('Ketu')} — detached from material world, spiritual fatigue`); }
+  const moonH = H('Moon');
+  if ([8,12].includes(moonH)) { score += 15; indicators.push(`Moon in H${moonH} — emotional exhaustion, needs withdrawal`); }
+  if ((planets.Saturn?.aspects||[]).includes(moonH)) { score += 15; indicators.push('Saturn aspects Moon — emotional heaviness, burden-bearing'); }
+  const h12Count = Object.values(planets).filter(p=>p.house===12).length;
+  if (h12Count >= 3) { score += 15; indicators.push(`${h12Count} planets in H12 — strong pull toward dissolution and rest`); }
+  if (planets.Moon?.status.includes('Debilitated')) { score += 15; indicators.push('Moon debilitated — soul worn thin by emotional suffering'); }
+
+  score = Math.min(100, score);
+  const level = score >= 70 ? 'HIGH — old, tired soul; may feel "done" with worldly life early'
+    : score >= 40 ? 'MODERATE — soul has been through much; needs regular withdrawal and silence'
+    : 'LOW — relatively fresh incarnation energy; engaged with life';
+
+  return {
+    score, level, indicators,
+    summary: `Soul Exhaustion: ${score}/100 — ${level} | ${indicators.join(' | ')}`
+  };
+}
+
+// ── Vak Shakti Engine ──
+function getVakShaktiEngine(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const ak = karakas?.Atmakaraka;
+  let score = 0;
+  const gifts = [], risks = [];
+
+  if (H('Mercury')===2||H('Mercury')===1||(planets.Mercury?.aspects||[]).includes(2)) { score+=20; gifts.push('Mercury activates H2 — precise, impactful speech'); }
+  if (ST('Mercury').includes('Exalted')||ST('Mercury').includes('Own')) { score+=20; gifts.push('Mercury strong — words carry weight and intelligence'); }
+  if (H('Jupiter')===2||(planets.Jupiter?.aspects||[]).includes(2)) { score+=15; gifts.push('Jupiter influences H2 — wisdom in speech, blessing in words'); }
+  if (ak === 'Mercury') { score+=15; gifts.push('Mercury as AK — speech is the soul vehicle, teaching/writing destiny'); }
+  if (ak === 'Jupiter') { score+=10; gifts.push('Jupiter as AK — speech carries dharmic authority'); }
+  // Risks
+  if (H('Mars')===2||(planets.Mars?.aspects||[]).includes(2)) { risks.push('Mars influences H2 — speech can wound; anger in words'); }
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Mercury?.sid||0))<10) { risks.push('Rahu-Mercury — speech can mislead or attract deceit'); }
+  if (H('Saturn')===2) { risks.push('Saturn in H2 — speech blocked, slow to express, deliberate'); }
+  if (planets.Mercury?.combust) { risks.push('Mercury combust — ego suppresses clear expression'); }
+
+  score = Math.min(100, score);
+  return {
+    score, gifts, risks,
+    summary: `Vak Shakti (Speech Power): ${score}/100 | Gifts: ${gifts.join(', ')||'modest'} | Risks: ${risks.join(', ')||'none'}`
+  };
+}
+
+// ── Sacred Sound Key (Beeja Resonance) ──
+function getSacredSoundKey(nakshatra, karakas, lagnaIdx) {
+  const ak = karakas?.Atmakaraka;
+  // Nakshatra-based beeja
+  const NAK_BEEJA = {
+    'Ashwini':'Om','Bharani':'Aim','Krittika':'Hreem','Rohini':'Shreem',
+    'Mrigashira':'Hreem','Ardra':'Om','Punarvasu':'Shreem','Pushya':'Aim',
+    'Ashlesha':'Kleem','Magha':'Hreem','Purva Phalguni':'Shreem','Uttara Phalguni':'Om',
+    'Hasta':'Aim','Chitra':'Hreem','Swati':'Shreem','Vishakha':'Om',
+    'Anuradha':'Kleem','Jyeshtha':'Hreem','Mula':'Om','Purva Ashadha':'Hreem',
+    'Uttara Ashadha':'Om','Shravana':'Aim','Dhanishtha':'Shreem','Shatabhisha':'Om',
+    'Purva Bhadrapada':'Hreem','Uttara Bhadrapada':'Om','Revati':'Shreem'
+  };
+  // AK-based beeja
+  const AK_BEEJA = {
+    Sun:'Hraam Hreem Hraum','Moon':'Om Shreem','Mars':'Om Kraam Kreem',
+    Mercury:'Aim Hreem Shreem','Jupiter':'Om Graam Greem','Venus':'Om Shreem Hreem Kleem',
+    Saturn:'Om Praam Preem Praum','Rahu':'Om Raam','Ketu':'Om Gam'
+  };
+  const nakBeeja = NAK_BEEJA[nakshatra.name] || 'Om';
+  const akBeeja = ak ? AK_BEEJA[ak] || 'Om' : 'Om';
+
+  return {
+    primaryBeeja: nakBeeja,
+    akBeeja,
+    fullMantricKey: `${nakBeeja} ${akBeeja}`,
+    nakshatra: nakshatra.name,
+    ak,
+    summary: `Sacred Sound Key: Primary beeja from ${nakshatra.name} nakshatra = ${nakBeeja} | AK (${ak}) beeja = ${akBeeja} | Combined: ${nakBeeja} ${akBeeja}`
+  };
+}
+
+// ── Drishti Shakti Engine (Susceptibility to external energy) ──
+function getDrishtiShaktiEngine(planets, lagnaIdx) {
+  const H = name => planets[name]?.house || 0;
+  let score = 0;
+  const factors = [];
+
+  const moonH = H('Moon');
+  if (planets.Moon?.bala < 40) { score+=25; factors.push('Moon weak — absorbs external emotions and energies heavily'); }
+  if ((planets.Saturn?.aspects||[]).includes(1)||(planets.Rahu?.house||0)===1) { score+=20; factors.push('Malefic on Lagna — aura vulnerable to external negativity'); }
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10) { score+=15; factors.push('Rahu-Venus — attracts jealousy, particularly around beauty/success'); }
+  if (planets.Lagna?.lord && planets[planets.Lagna?.lord]?.combust) { score+=15; factors.push('Lagna lord combust — protective aura reduced'); }
+  const moonNearRahu = Math.abs((planets.Rahu?.sid||0)-(planets.Moon?.sid||0))<15;
+  if (moonNearRahu) { score+=20; factors.push('Rahu near Moon — highly sensitive to others thoughts/emotions'); }
+
+  score = Math.min(100, score);
+  const level = score>=60?'HIGH — take care around negative environments, protect the aura consciously':
+    score>=30?'MODERATE — situationally sensitive, especially during stress':
+    'LOW — relatively protected aura, less affected by external energy';
+
+  return { score, level, factors,
+    summary: `Drishti Shakti susceptibility: ${level} (${score}/100) | ${factors.join(' | ')||'Aura relatively protected'}` };
+}
+
+// ── Swapna Engine (Dream Karma) ──
+function getSwapnaEngine(planets, lagnaIdx) {
+  const H = name => planets[name]?.house || 0;
+  const dreamPatterns = [];
+
+  const moonH = H('Moon'), ketuH = H('Ketu');
+  if ([12,8].includes(moonH)) dreamPatterns.push('Active dream life — Moon in H'+moonH+' makes dream world vivid and karmic');
+  if (Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10) dreamPatterns.push('Ketu conjunct Moon — ancestors and past-life figures visit in dreams');
+  if (H('Ketu')===12) dreamPatterns.push('Ketu in H12 — strong connection to astral realm, mystical dreams');
+  const h12Planets = Object.values(planets).filter(p=>p.house===12);
+  if (h12Planets.length >= 2) dreamPatterns.push(`${h12Planets.length} planets in H12 — sleep and dream states are karmic processing time`);
+  if ((planets.Saturn?.aspects||[]).includes(moonH)) dreamPatterns.push('Saturn aspects Moon — recurring heavy or teaching dreams, karmic processing during sleep');
+  if (H('Rahu')===12) dreamPatterns.push('Rahu in H12 — unusual dream states, prophetic or confusing dreams, spiritual experiences during sleep');
+
+  const dreamType = dreamPatterns.length >= 3 ? 'ACTIVE dream karma — dreams carry significant karmic messages'
+    : dreamPatterns.length >= 1 ? 'MODERATE dream activity — occasional meaningful dreams'
+    : 'Standard dream life — no strong karmic dream indicators';
+
+  return { dreamPatterns, dreamType,
+    summary: `Swapna (Dream Karma): ${dreamType} | ${dreamPatterns.join(' | ')||'No strong dream karma indicators'}` };
+}
+
+// ── Guru Arrival Timing Engine ──
+function getGuruArrivalEngine(planets, lagnaIdx, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const jupH = H('Jupiter');
+  const l9 = RASI_LORD[(lagnaIdx+8)%12];
+  const indicators = [];
+  let guruLikely = false;
+
+  if ([1,4,5,9].includes(jupH)) { guruLikely=true; indicators.push(`Jupiter in H${jupH} — guru appears naturally, through education or dharmic context`); }
+  if (planets.Jupiter?.status.includes('Exalted')) { guruLikely=true; indicators.push('Jupiter exalted — blessed by teachers, guru connection is strong'); }
+  if ((planets.Jupiter?.aspects||[]).includes(9)||(planets.Jupiter?.aspects||[]).includes(5)) { guruLikely=true; indicators.push('Jupiter aspects H5/H9 — teaching lineage accessible'); }
+
+  // Timing windows
+  const guruWindows = dasha.dashaSequence?.filter(ds => ds.lord === 'Jupiter' || ds.lord === l9)
+    .map(ds => `${ds.lord} Dasha (${ds.startDate.slice(0,4)}–${ds.endDate.slice(0,4)})`)
+    .slice(0,2) || [];
+
+  // Type of guru
+  const guruType = planets.Jupiter?.status.includes('Exalted') ? 'Rare master — classical spiritual teacher' :
+    [1,5,9].includes(jupH) ? 'Mentor/guide — appears through life naturally' :
+    [6,8,12].includes(jupH) ? 'Guru through suffering — teacher arrives during crisis' :
+    'Guru arrives in mature phase of life';
+
+  return { guruLikely, guruType, guruWindows, indicators,
+    summary: `Guru arrival: ${guruType} | Likely timing: ${guruWindows.join(', ')||'when ready'} | ${indicators.join(' | ')||'Guru connection moderate'}` };
+}
+
+// ── Hidden Enemy Engine ──
+function getHiddenEnemyEngine(planets, lagnaIdx) {
+  const H = name => planets[name]?.house || 0;
+  const indicators = [];
+
+  const l12 = RASI_LORD[(lagnaIdx+11)%12];
+  const l6 = RASI_LORD[(lagnaIdx+5)%12];
+  // 12th lord connection to personal houses = betrayal from close circle
+  if ([1,2,4,7].includes(H(l12))) indicators.push(`12th lord ${l12} in H${H(l12)} — enemy operates close to home, possibly disguised as friend or family`);
+  // 6th lord in 4th = family enemy
+  if (H(l6)===4) indicators.push(`6th lord ${l6} in H4 — hidden opposition from within the home/family`);
+  // Rahu in 7th or 4th = hidden betrayal through intimate person
+  if (H('Rahu')===7) indicators.push('Rahu in H7 — partner or close associate may harbor hidden agenda');
+  if (H('Rahu')===4) indicators.push('Rahu in H4 — family member or home environment source of hidden stress');
+  // Ketu in 7th
+  if (H('Ketu')===7) indicators.push('Ketu in H7 — karmic connection with partner; old soul recognizes them but may be deceived');
+  // Saturn + H4 = family obstruction
+  if (H('Saturn')===4||(planets.Saturn?.aspects||[]).includes(4)) indicators.push('Saturn influences H4 — restrictive force in home environment, possible elder family opposition');
+  // Mars in 12th
+  if (H('Mars')===12) indicators.push('Mars in H12 — hidden anger from close persons, secret opposition');
+
+  return { indicators,
+    summary: indicators.length >= 2
+      ? `Hidden enemy pattern (${indicators.length} indicators): ${indicators.join(' | ')}`
+      : 'No strong hidden enemy indicators — opposition likely from known sources' };
+}
+
+// ── Sacred Fear Engine ──
+function getSacredFearEngine(planets, lagnaIdx) {
+  const H = name => planets[name]?.house || 0;
+  const fears = [];
+
+  // Abandonment (Moon-Saturn/Ketu)
+  const moonH = H('Moon');
+  if ((planets.Saturn?.aspects||[]).includes(moonH)||(planets.Ketu?.aspects||[]).includes(moonH)||[8,12].includes(moonH))
+    fears.push({ type: 'Abandonment', weight: 85, desc: 'Fear of being left alone — drives over-attachment or premature detachment to avoid pain' });
+
+  // Poverty (H2/H11 weak)
+  const l2 = RASI_LORD[(lagnaIdx+1)%12];
+  if ([6,8,12].includes(H(l2)) && planets[l2]?.bala < 45)
+    fears.push({ type: 'Poverty/Scarcity', weight: 75, desc: 'Fear of financial loss — may hoard, over-save, or take extreme risks to avoid poverty feeling' });
+
+  // Betrayal (Rahu-Venus or Saturn-H7)
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10 || H('Saturn')===7)
+    fears.push({ type: 'Betrayal', weight: 80, desc: 'Fear of being betrayed in love or trust — creates tests, walls, or repeated suspicious patterns' });
+
+  // Humiliation (Sun afflicted)
+  const sunH = H('Sun');
+  if ([6,8,12].includes(sunH)||(planets.Saturn?.aspects||[]).includes(sunH))
+    fears.push({ type: 'Humiliation', weight: 70, desc: 'Fear of public failure or loss of dignity — avoids exposure, perfectionism, or self-sabotage before others see failure' });
+
+  // Powerlessness (Saturn-Lagna or weak Lagna lord)
+  const lagnaLord = RASI_LORD[lagnaIdx];
+  if ((planets.Saturn?.aspects||[]).includes(1)||[6,8,12].includes(H(lagnaLord)))
+    fears.push({ type: 'Powerlessness', weight: 75, desc: 'Fear of losing control — over-controls environment or collapses when control is lost' });
+
+  fears.sort((a,b) => b.weight - a.weight);
+  const primary = fears[0];
+
+  return { fears, primaryFear: primary?.type || 'No dominant fear pattern',
+    summary: primary
+      ? `Primary karmic fear: ${primary.type} (weight ${primary.weight}/100) — ${primary.desc} | Secondary: ${fears[1]?.type||'none'}`
+      : 'No dominant sacred fear pattern identified' };
+}
+
+// ── Divine Protection Engine ──
+function getDivineProtectionEngine(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const protections = [];
+
+  // Jupiter in Kendra = strongest protection
+  if ([1,4,7,10].includes(H('Jupiter'))) protections.push(`Jupiter in H${H('Jupiter')} (Kendra) — divine grace operates continuously; invisible protection active throughout life`);
+  // Vipareeta Raja = rises from destruction
+  if (yogas.some(y=>y.name.includes('Vipareeta'))) protections.push('Vipareeta Raja Yoga — this soul is built to survive what should destroy it; falls become launches');
+  // 9th lord strong
+  const l9 = RASI_LORD[(lagnaIdx+8)%12];
+  if (planets[l9]?.status.includes('Exalted')||planets[l9]?.status.includes('Own')) protections.push(`9th lord ${l9} strong — divine luck and dharmic protection; ancestral merit covers gaps`);
+  // Vargottama planets
+  const vargottamaList = Object.entries(planets).filter(([,p])=>p.rasiIdx===p.navamsaRasiIdx).map(([n])=>n);
+  if (vargottamaList.length > 0) protections.push(`${vargottamaList.join(',')} Vargottama — these planets carry extra protection; D9 strength saves what D1 risks`);
+  // Pushkara planets
+  // Gajakesari
+  if (yogas.some(y=>y.name.includes('Gajakesari'))) protections.push('Gajakesari Yoga — Moon-Jupiter alignment creates ongoing divine grace and public goodwill');
+  // Strong Moon
+  if (planets.Moon?.status.includes('Exalted')||planets.Moon?.status.includes('Own')) protections.push('Moon exalted/own — emotional protection strong; people and mother figures provide rescue');
+
+  return { protections,
+    summary: protections.length
+      ? `Divine protection sources (${protections.length}): ${protections.join(' | ')}`
+      : 'Divine protection comes through effort and discipline rather than visible grace' };
+}
+
+// ── Pre-Birth Choice Engine ──
+function getPreBirthChoiceEngine(planets, lagnaIdx, nakshatra, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ak = karakas?.Atmakaraka;
+
+  // Why these parents: 4th lord + 9th lord condition
+  const l4 = RASI_LORD[(lagnaIdx+3)%12], l9 = RASI_LORD[(lagnaIdx+8)%12];
+  const parentChoice = [6,8,12].includes(H(l4)) || [6,8,12].includes(H(l9))
+    ? 'Parents chosen for karmic challenge — this birth required specific friction to activate soul lessons'
+    : 'Parents chosen for karmic support — this birth required stability as a launchpad';
+
+  // Why this pain type
+  const painType = planets[ak]?.status.includes('Debilitated') ? `Soul chose ${ak}-type suffering to master ${ak} significations through lived experience`
+    : `Soul chose to strengthen ${ak} significations — current life is the testing ground for ${ak} mastery`;
+
+  // Why this nakshatra
+  const nakshatraChoice = `Born in ${nakshatra.name} (lord: ${nakshatra.lord}) — soul chose this frequency to work through ${nakshatra.lord}-type karma`;
+
+  // Why this lagna
+  const LAGNA_CHOICE = {
+    Mesha:'to develop initiative and courage', Rishabha:'to master material stability and patience',
+    Mithuna:'to develop communication and adaptability', Kataka:'to learn emotional boundaries',
+    Simha:'to develop authentic authority', Kanya:'to master discernment and service',
+    Tula:'to learn balance and right relationships', Vrischika:'to master transformation and depth',
+    Dhanu:'to develop wisdom and dharmic alignment', Makara:'to master discipline and long-term success',
+    Kumbha:'to develop collective consciousness', Meena:'to dissolve ego and access compassion'
+  };
+
+  return {
+    parentChoice, painType, nakshatraChoice,
+    lagnaChoice: LAGNA_CHOICE[RASI_NAMES[lagnaIdx]] || 'to master this specific combination of life challenges',
+    summary: `Pre-birth choices: ${parentChoice} | ${painType} | ${nakshatraChoice}`
+  };
+}
+
+// ── One Event That Breaks The Self ──
+function getBreakingEventEngine(planets, lagnaIdx, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const candidates = [];
+
+  // 8th lord strong period
+  const l8 = RASI_LORD[(lagnaIdx+7)%12];
+  const l8H = H(l8);
+  dasha.dashaSequence?.forEach(ds => {
+    if (ds.lord === l8 || ds.lord === 'Rahu' || ds.lord === 'Ketu') {
+      const age = Math.floor((new Date(ds.startDate) - new Date(dasha.dashaSequence[0].startDate)) / (365.25*24*3600*1000));
+      if (age > 10 && age < 60) {
+        candidates.push({ period: ds.lord+' Dasha ('+ds.startDate.slice(0,7)+')',
+          age, type: ds.lord === l8 ? '8th lord — deep transformation' : ds.lord+' — karmic disruption',
+          desc: `${ds.lord} Dasha at age ${age} — potential identity-shattering period, old self cannot survive this transit unchanged` });
+      }
+    }
+  });
+
+  // Saturn return periods (strongest breaking events)
+  const birthYear = new Date(dasha.dashaSequence?.[0]?.startDate || '2000').getFullYear();
+  [29,58].forEach(age => {
+    candidates.push({ period: `Age ${age}`, age, type: 'Saturn Return',
+      desc: `Saturn Return at age ${age} — structural dismantling of old identity, forced reinvention` });
+  });
+
+  candidates.sort((a,b) => {
+    const now = Date.now();
+    const aTime = Math.abs(a.age - 30); // prefer events around age 25-40
+    const bTime = Math.abs(b.age - 30);
+    return aTime - bTime;
+  });
+
+  const primary = candidates[0];
+  return { candidates: candidates.slice(0,3), primary,
+    summary: primary ? `Breaking event: ${primary.period} — ${primary.desc}` : 'No single shattering event identified — transformation comes through slow pressure' };
+}
+
+// ── Death Purpose Engine ──
+function getDeathPurposeEngine(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ak = karakas?.Atmakaraka;
+  const l12 = RASI_LORD[(lagnaIdx+11)%12];
+
+  // What must be complete before exit?
+  const completions = [];
+  if ([5,9].includes(H(ak ? ak : 'Jupiter'))) completions.push('Teaching or knowledge must be transmitted — wisdom cannot leave with you');
+  if (planets.Jupiter?.status.includes('Exalted') && [1,5,9,10].includes(H('Jupiter'))) completions.push('Service must be rendered — this soul owes contribution before exit');
+  if ([8,12].includes(H('Ketu')) || planets.Ketu?.status.includes('Exalted')) completions.push('Spiritual attainment — the soul came to reach a specific level of inner clarity');
+  if ([1,4,7,10].includes(H(RASI_LORD[(lagnaIdx+4)%12]))) completions.push('A child or creative legacy must be established and stabilized');
+  if ((planets.Saturn?.bala||0) >= 65) completions.push('A structural work must be completed and left standing — Saturn demands visible legacy');
+  // Forgiveness/release
+  if ((planets.Saturn?.aspects||[]).includes(H('Moon')) || H('Ketu')===7) completions.push('A specific forgiveness or release — the soul carries an unresolved bond that must be cleared');
+
+  return { completions,
+    summary: completions.length
+      ? `Death purpose — what must complete before exit: ${completions.join(' | ')}`
+      : 'Purpose is to live fully and consciously — no single uncompleted task identified' };
+}
+
+// ── Shakti Awakening Trigger ──
+function getShaktiAwakeningEngine(planets, lagnaIdx, yogas) {
+  const H = name => planets[name]?.house || 0;
+  const triggers = [];
+
+  if ([6,8,12].includes(H('Venus')) || planets.Venus?.combust)
+    triggers.push({ trigger: 'Heartbreak', desc: 'Loss in love becomes the doorway — the wound opens what comfort kept closed' });
+  if ((planets.Saturn?.aspects||[]).includes(H('Moon')) || H('Saturn')===1)
+    triggers.push({ trigger: 'Humiliation or heavy responsibility', desc: 'Being brought low or bearing impossible weight breaks the ego-shell and releases real power' });
+  if (H('Ketu')===1 || H('Ketu')===5 || H('Ketu')===9)
+    triggers.push({ trigger: 'Exile or isolation', desc: 'Withdrawal from the world — forced or chosen — becomes the incubation of real awakening' });
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Moon?.sid||0))<15)
+    triggers.push({ trigger: 'Betrayal', desc: 'When trusted person shatters the illusion — the shock opens the karmic gate' });
+  if ([1,4,5,9].includes(H('Jupiter')))
+    triggers.push({ trigger: 'Guru meeting', desc: 'A specific teacher activates what could not open alone — this chart has strong guru karma' });
+  if (yogas.some(y=>y.name.includes('Vipareeta')))
+    triggers.push({ trigger: 'Destruction of what was built', desc: 'Loss of position, wealth, or status becomes the liberation — Vipareeta yoga rises from collapse' });
+
+  const primary = triggers[0];
+  return { triggers, primaryTrigger: primary?.trigger || 'Slow inner pressure',
+    summary: primary ? `Shakti awakening trigger: ${primary.trigger} — ${primary.desc}` : 'Awakening comes through gradual deepening rather than single trigger' };
+}
+
+// ── Shadow Inheritance Engine ──
+function getShadowInheritance(planets, lagnaIdx) {
+  const H = name => planets[name]?.house || 0;
+  const shadows = [];
+
+  const moonH = H('Moon');
+  if ((planets.Saturn?.aspects||[]).includes(moonH)) shadows.push({ trait: 'Emotional coldness or suppression', source: 'Maternal line', desc: 'Difficulty expressing warmth — inherited from mother or grandmother' });
+  if (H('Rahu')===4||(planets.Saturn?.aspects||[]).includes(4)) shadows.push({ trait: 'Anxiety and hypervigilance', source: 'Home lineage', desc: 'Nervous system tuned to danger — inherited from whoever survived hardship in the family' });
+  if (planets.Saturn?.bala >= 65 && [6,8,12].includes(H('Saturn'))) shadows.push({ trait: 'Martyrdom pattern', source: 'Paternal line', desc: 'Tendency to sacrifice self beyond what is needed — family pattern of carrying others burdens' });
+  if (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10) shadows.push({ trait: 'Obsessive attachment in love', source: 'Ancestral pattern', desc: 'Someone in the lineage loved compulsively — this pattern echoes forward' });
+  if (H('Ketu')===4||H('Ketu')===9) shadows.push({ trait: 'Disconnection from roots', source: 'Family karma', desc: 'A break in the ancestral chain — either migration, death, or abandonment that disconnects from origins' });
+
+  return { shadows,
+    summary: shadows.length
+      ? `Shadow inheritance (${shadows.length}): ${shadows.map(s=>`${s.trait} (${s.source})`).join(' | ')}`
+      : 'No strong shadow inheritance patterns identified' };
+}
+
+// ── Person To Forgive Engine ──
+function getPersonToForgiveEngine(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const candidates = [];
+
+  const sunH = H('Sun');
+  if ([6,8,12].includes(sunH)||(planets.Saturn?.aspects||[]).includes(sunH)) candidates.push({ person: 'Father or authority figure', weight: 85, desc: 'Sun affliction — holding father wound keeps self-authority blocked' });
+  const moonH = H('Moon');
+  if ([6,8,12].includes(moonH)||(planets.Saturn?.aspects||[]).includes(moonH)) candidates.push({ person: 'Mother or primary caregiver', weight: 80, desc: 'Moon affliction — unresolved mother karma blocks emotional openness' });
+  if (H('Saturn')===7 || planets.Venus?.combust || [6,8,12].includes(H('Venus'))) candidates.push({ person: 'Past romantic partner', weight: 75, desc: 'Venus/H7 affliction — old love wound keeps heart guarded against real intimacy' });
+  if (H('Saturn')===3 || H('Mars')===3) candidates.push({ person: 'Sibling', weight: 65, desc: 'H3 affliction — sibling competition or betrayal holds unexpressed anger' });
+  // Self-forgiveness if Ketu in 1st
+  if (H('Ketu')===1) candidates.push({ person: 'Self', weight: 90, desc: 'Ketu in H1 — deepest unforgiven person is the self; self-judgment blocks all outer relationships' });
+
+  candidates.sort((a,b) => b.weight - a.weight);
+  const primary = candidates[0];
+
+  return { candidates, primary,
+    summary: primary ? `Person to forgive: ${primary.person} (weight ${primary.weight}/100) — ${primary.desc}` : 'Forgiveness work distributed — no single dominant stuck relationship' };
+}
+
+// ── Life You Almost Lived ──
+function getLifeAlmostLived(planets, lagnaIdx, yogas, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const diverted = [];
+
+  // Strong yogas that may not manifest
+  if (yogas.some(y=>y.name.includes('Pancha Mahapurusha')) && planets.Mars?.status.includes('Exalted'))
+    diverted.push('Military/athletic/leadership career that was possible but likely diverted by family or circumstance');
+  if (yogas.some(y=>y.name.includes('Hamsa')) && H('Jupiter')===7)
+    diverted.push('Spiritual teaching path — Jupiter in H7 exalted creates the teacher but life may have pulled toward marriage/career instead');
+  if (yogas.some(y=>y.name.includes('Lakshmi')))
+    diverted.push('Exceptional wealth accumulation that was cosmically seeded but required specific dasha alignment to manifest');
+  if (planets.Venus?.status.includes('Exalted') && [6,8,12].includes(H('Venus')))
+    diverted.push('Creative or artistic life — Venus has the gift but its house placement suggests this was sacrificed or suppressed');
+  // Foreign life that almost happened
+  if (H('Rahu')===9 || H('Rahu')===12)
+    diverted.push('Life in foreign country — Rahu in 9/12 pulled strongly toward abroad but birth circumstances may have kept you here');
+
+  return { diverted,
+    summary: diverted.length
+      ? `Life you almost lived: ${diverted.join(' | ')}`
+      : 'The life being lived aligns with the strongest karma — no major diverted path identified' };
+}
+
+// ── Time of Day Karma ──
+function getTimeOfDayKarma(tob, lagna) {
+  const [hours, mins] = tob.split(':').map(Number);
+  const totalMins = hours * 60 + mins;
+  const lagnaDegs = lagna.degInRasi;
+
+  const SANDHI_GATES = [
+    { name: 'Brahma Muhurta (pre-dawn)', range: [240, 300], karma: 'born with heightened spiritual sensitivity, meditative mind, connected to divine timing' },
+    { name: 'Dawn (Sunrise)', range: [300, 360], karma: 'Solar birth — clarity, leadership, visibility; life moves toward light' },
+    { name: 'Morning', range: [360, 480], karma: 'Action-oriented birth — life rewards effort, initiative, and direct engagement' },
+    { name: 'Noon', range: [660, 780], karma: 'Peak Sun birth — ambitious, visible, authority-seeking; must manage ego carefully' },
+    { name: 'Dusk (Sunset)', range: [1020, 1080], karma: 'Twilight birth — dual nature, transitional, bridge between worlds; sensitive to endings' },
+    { name: 'Night', range: [1200, 1440], karma: 'Lunar birth — intuitive, hidden depths, inner life richer than outer; thrives in reflection' },
+    { name: 'Midnight', range: [1380, 1440], karma: 'Midnight birth — Ketu nature; deep spiritual intensity, detachment, transformation through darkness' },
+  ];
+
+  const gate = SANDHI_GATES.find(g => totalMins >= g.range[0] && totalMins < g.range[1]);
+  const isSandhi = lagnaDegs < 3 || lagnaDegs > 27;
+
+  return {
+    birthTime: tob,
+    birthGate: gate?.name || 'Standard daytime',
+    karma: gate?.karma || 'Regular life rhythm — birth time not at a special gate',
+    isSandhi, lagnaDegs: lagnaDegs.toFixed(2),
+    summary: `Time of day karma: ${gate?.name||'Standard'} — ${gate?.karma||'regular life rhythm'}${isSandhi ? ' | SANDHI BIRTH: Lagna at cusp — heightened sensitivity, identity in transition' : ''}`
+  };
+}
+
+module.exports.getKulaDevataEngine = getKulaDevataEngine;
+module.exports.getFinalUnfinishedSentence = getFinalUnfinishedSentence;
+module.exports.getSoulExhaustionIndex = getSoulExhaustionIndex;
+module.exports.getVakShaktiEngine = getVakShaktiEngine;
+module.exports.getSacredSoundKey = getSacredSoundKey;
+module.exports.getDrishtiShaktiEngine = getDrishtiShaktiEngine;
+module.exports.getSwapnaEngine = getSwapnaEngine;
+module.exports.getGuruArrivalEngine = getGuruArrivalEngine;
+module.exports.getHiddenEnemyEngine = getHiddenEnemyEngine;
+module.exports.getSacredFearEngine = getSacredFearEngine;
+module.exports.getDivineProtectionEngine = getDivineProtectionEngine;
+module.exports.getPreBirthChoiceEngine = getPreBirthChoiceEngine;
+module.exports.getBreakingEventEngine = getBreakingEventEngine;
+module.exports.getDeathPurposeEngine = getDeathPurposeEngine;
+module.exports.getShaktiAwakeningEngine = getShaktiAwakeningEngine;
+module.exports.getShadowInheritance = getShadowInheritance;
+module.exports.getPersonToForgiveEngine = getPersonToForgiveEngine;
+module.exports.getLifeAlmostLived = getLifeAlmostLived;
+module.exports.getTimeOfDayKarma = getTimeOfDayKarma;
