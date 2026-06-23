@@ -192,6 +192,18 @@ function buildReadingPrompt(chart, person, question) {
   const forgiveStr = chart.personToForgive?.summary || '';
   const almostLivedStr = chart.lifeAlmostLived?.summary || '';
   const timeKarmaStr = chart.timeOfDayKarma?.summary || '';
+ 
+  // Batch 11 — 171-230 engines
+  const divArchStr = chart.divineArch ? Object.values(chart.divineArch).map(e=>e.summary).join(' | ') : '';
+  const cosmicMemStr = chart.cosmicMem ? Object.values(chart.cosmicMem).map(e=>e.summary).join(' | ') : '';
+  const cosmicDestStr = chart.cosmicDest ? Object.values(chart.cosmicDest).map(e=>e.summary).join(' | ') : '';
+  const forbiddenStr = chart.forbiddenRishi ? Object.values(chart.forbiddenRishi).map(e=>e.summary).join(' | ') : '';
+  const plOriginStr = chart.plOrigin ? Object.values(chart.plOrigin).map(e=>e.summary).join(' | ') : '';
+  const soulAgeExpStr = chart.soulAgeExp ? Object.values(chart.soulAgeExp).map(e=>e.summary).join(' | ') : '';
+  const plEventsStr = chart.plEvents ? Object.values(chart.plEvents).map(e=>e.summary).join(' | ') : '';
+  const soulTravelStr = chart.soulTravel ? Object.values(chart.soulTravel).map(e=>e.summary).join(' | ') : '';
+  const deepMemStr = chart.deepMemory ? Object.values(chart.deepMemory).map(e=>e.summary).join(' | ') : '';
+  const finalSynth230Str = chart.finalSynth230 ? Object.values(chart.finalSynth230).map(e=>e.summary).join(' | ') : '';
   const transitTriggersStr = chart.transitTriggers
     ? [
         chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
@@ -478,6 +490,27 @@ SHADOW INHERITANCE: ${shadowInhStr}
 PERSON TO FORGIVE: ${forgiveStr}
 LIFE ALMOST LIVED: ${almostLivedStr}
 TIME OF DAY KARMA: ${timeKarmaStr}
+ 
+DIVINE ARCHITECTURE (171-176):
+${divArchStr}
+COSMIC MEMORY (177-180):
+${cosmicMemStr}
+COSMIC DESTINY (181-188):
+${cosmicDestStr}
+FORBIDDEN RISHI LAYER (189-198):
+${forbiddenStr}
+PAST-LIFE ORIGIN (199-203):
+${plOriginStr}
+SOUL AGE EXPANSION (204-208):
+${soulAgeExpStr}
+PAST-LIFE EVENTS (209-214):
+${plEventsStr}
+SOUL TRAVEL LOGIC (215-219):
+${soulTravelStr}
+DEEP MEMORY (220-224):
+${deepMemStr}
+FINAL SYNTHESIS 225-230:
+${finalSynth230Str}
  
 PSYCHOLOGICAL PROFILE:
 ${psychStr}
