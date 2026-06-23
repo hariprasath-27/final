@@ -145,6 +145,53 @@ function buildReadingPrompt(chart, person, question) {
   const careerProtStr = chart.careerProtector?.summary || '';
   const wealthProtStr = chart.wealthProtector?.summary || '';
   const karmaClassStr = chart.karmaClassification?.summary || '';
+ 
+  // Batch 8 deep analysis
+  const houseStoryStr = chart.houseStory ? Object.entries(chart.houseStory.stories||{}).filter(([,s])=>s.specialStory||s.occupants?.length>0).map(([,s])=>s.summary).join(' | ') : '';
+  const dispositorStr = chart.dispositorChain?.chartRuler?.summary || '';
+  const dispositorChainsStr = chart.dispositorChain ? Object.values(chart.dispositorChain.chains||{}).filter(c=>c.chainLength>2).map(c=>c.summary).join(' | ') : '';
+  const clustersStr = chart.planetClusters?.summary || '';
+  const elementStr = chart.elementBalance?.summary || '';
+  const modalityStr = chart.modalityEngine?.summary || '';
+  const alLagnaStr = chart.alVsLagna?.summary || '';
+  const breakpointsStr = chart.breakpointYears?.summary || '';
+  const wealthStyleStr = chart.wealthStyle?.summary || '';
+  const relWoundsStr = chart.relationshipWounds?.summary || '';
+  const powerStr = chart.powerEngine?.summary || '';
+  const fearStr = chart.fearEngine?.summary || '';
+  const nakshatraDeepStr = chart.nakshatraDeep?.summary || '';
+  const peakPowerStr = chart.peakPowerYears?.summary || '';
+ 
+  // Batch 9 domain engines
+  const parentKarmaStr = chart.parentKarma?.summary || '';
+  const businessJobStr = chart.businessVsJob?.summary || '';
+  const lossStr = chart.lossEngine?.summary || '';
+  const reputationStr = chart.reputationEngine?.summary || '';
+  const inLawStr = chart.inLawKarma?.summary || '';
+  const siblingStr = chart.siblingKarma?.summary || '';
+  const debtStr = chart.debtLitigation?.summary || '';
+  const repeatedKarmaStr = chart.repeatedKarma?.summary || '';
+ 
+  // Batch 10 deep karma engines
+  const kulaDevataStr = chart.kulaDevata?.summary || '';
+  const finalSentenceStr = chart.finalSentence?.summary || '';
+  const soulExhaustionStr = chart.soulExhaustion?.summary || '';
+  const vakShaktiStr = chart.vakShakti?.summary || '';
+  const sacredSoundStr = chart.sacredSound?.summary || '';
+  const drishtiStr = chart.drishtiShakti?.summary || '';
+  const swapnaStr = chart.swapnaEngine?.summary || '';
+  const guruArrivalStr = chart.guruArrival?.summary || '';
+  const hiddenEnemyStr = chart.hiddenEnemy?.summary || '';
+  const sacredFearStr = chart.sacredFear?.summary || '';
+  const divineProtStr = chart.divineProtection?.summary || '';
+  const preBirthStr = chart.preBirthChoice?.summary || '';
+  const breakingEventStr = chart.breakingEvent?.summary || '';
+  const deathPurposeStr = chart.deathPurpose?.summary || '';
+  const shaktiStr = chart.shaktiAwakening?.summary || '';
+  const shadowInhStr = chart.shadowInheritance?.summary || '';
+  const forgiveStr = chart.personToForgive?.summary || '';
+  const almostLivedStr = chart.lifeAlmostLived?.summary || '';
+  const timeKarmaStr = chart.timeOfDayKarma?.summary || '';
   const transitTriggersStr = chart.transitTriggers
     ? [
         chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
@@ -349,6 +396,88 @@ ${wealthProtStr}
  
 KARMA CLASSIFICATION (Fixed / Flexible / Avoidable / Earned):
 ${karmaClassStr}
+ 
+HOUSE STORY ENGINE (lord placement tells the real story — use these for all house interpretations):
+${houseStoryStr}
+ 
+DISPOSITOR CHAIN (hidden chart ruler and planet root controllers):
+Chart ruler: ${dispositorStr}
+Key chains: ${dispositorChainsStr}
+ 
+PLANET CLUSTERS (concentrated karma zones):
+${clustersStr}
+ 
+ELEMENT & MODALITY BALANCE:
+${elementStr}
+${modalityStr}
+ 
+PUBLIC IMAGE vs TRUE SELF (AL vs Lagna):
+${alLagnaStr}
+ 
+BREAKPOINT YEARS (use for timeline section):
+${breakpointsStr}
+ 
+WEALTH STYLE (how money specifically comes to this chart):
+${wealthStyleStr}
+ 
+RELATIONSHIP WOUNDS (use in love/marriage sections — 2+ indicators only):
+${relWoundsStr}
+ 
+POWER DOMAINS (where this person commands and dominates):
+${powerStr}
+ 
+CORE FEARS (subconscious patterns — 2+ indicators only):
+${fearStr}
+ 
+NAKSHATRA DEEP PSYCHOLOGY:
+${nakshatraDeepStr}
+ 
+PEAK POWER YEARS:
+${peakPowerStr}
+ 
+PARENT KARMA (Father/Mother separate — 2+ indicators required):
+${parentKarmaStr}
+ 
+BUSINESS vs JOB ANALYSIS:
+${businessJobStr}
+ 
+ENERGY LEAKS (where life leaks strength):
+${lossStr}
+ 
+REPUTATION & FAME ENGINE:
+${reputationStr}
+ 
+IN-LAW KARMA:
+${inLawStr}
+ 
+SIBLING KARMA:
+${siblingStr}
+ 
+DEBT & LITIGATION RISK:
+${debtStr}
+ 
+REPEATED KARMA ACROSS CHARTS (destiny-level patterns):
+${repeatedKarmaStr}
+ 
+KULA DEVATA (ancestral deity): ${kulaDevataStr}
+FINAL UNFINISHED SENTENCE: ${finalSentenceStr}
+SOUL EXHAUSTION INDEX: ${soulExhaustionStr}
+VAK SHAKTI (speech power): ${vakShaktiStr}
+SACRED SOUND KEY: ${sacredSoundStr}
+DRISHTI SHAKTI (energy susceptibility): ${drishtiStr}
+SWAPNA ENGINE (dream karma): ${swapnaStr}
+GURU ARRIVAL TIMING: ${guruArrivalStr}
+HIDDEN ENEMY: ${hiddenEnemyStr}
+SACRED FEAR (primary karmic fear): ${sacredFearStr}
+DIVINE PROTECTION: ${divineProtStr}
+PRE-BIRTH CHOICE: ${preBirthStr}
+BREAKING EVENT (identity death): ${breakingEventStr}
+DEATH PURPOSE (what must complete): ${deathPurposeStr}
+SHAKTI AWAKENING TRIGGER: ${shaktiStr}
+SHADOW INHERITANCE: ${shadowInhStr}
+PERSON TO FORGIVE: ${forgiveStr}
+LIFE ALMOST LIVED: ${almostLivedStr}
+TIME OF DAY KARMA: ${timeKarmaStr}
  
 PSYCHOLOGICAL PROFILE:
 ${psychStr}
