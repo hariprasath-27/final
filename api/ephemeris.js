@@ -713,6 +713,18 @@ function buildFullChart(dob, tob, place, overrides={}) {
   const wealthProtector = getDomainProtector(planets, lagnaIdx, allYogas, 'wealth');
   const karmaClassification = getKarmaClassification(planets, lagnaIdx, allYogas, karakas);
 
+  // Batch 11 — Divine Architecture + Cosmic Memory (171-230)
+  const divineArch = getDivineArchitectureEngines(planets, lagnaIdx, karakas, allYogas, dasha);
+  const cosmicMem = getCosmicMemoryEngines(planets, lagnaIdx, karakas);
+  const cosmicDest = getCosmicDestinyEngines(planets, lagnaIdx, karakas, allYogas, dasha);
+  const forbiddenRishi = getForbiddenRishiEngines(planets, lagnaIdx, karakas, allYogas);
+  const plOrigin = getPastLifeOriginEngines(planets, lagnaIdx, karakas);
+  const soulAgeExp = getSoulAgeExpansionEngines(planets, lagnaIdx, karakas);
+  const plEvents = getPastLifeEventEngines(planets, lagnaIdx, karakas);
+  const soulTravel = getSoulTravelEngines(planets, lagnaIdx, karakas, nakshatra);
+  const deepMemory = getDeepMemoryEngines(planets, lagnaIdx, karakas);
+  const finalSynth230 = getFinalSynthesisEngines225to230(planets, lagnaIdx, karakas, allYogas);
+
   // Batch 10 — Deep Karma Engines
   const kulaDevata = getKulaDevataEngine(planets, lagnaIdx, karakas);
   const finalSentence = getFinalUnfinishedSentence(planets, lagnaIdx, karakas);
@@ -772,6 +784,8 @@ function buildFullChart(dob, tob, place, overrides={}) {
     siblingKarma, debtLitigation, repeatedKarma,
     alVsLagna, breakpointYears, wealthStyle, relationshipWounds,
     kulaDevata, finalSentence, soulExhaustion, vakShakti, sacredSound,
+    divineArch, cosmicMem, cosmicDest, forbiddenRishi, plOrigin,
+    soulAgeExp, plEvents, soulTravel, deepMemory, finalSynth230,
     drishtiShakti, swapnaEngine, guruArrival, hiddenEnemy, sacredFear,
     divineProtection, preBirthChoice, breakingEvent, deathPurpose,
     shaktiAwakening, shadowInheritance, personToForgive, lifeAlmostLived, timeOfDayKarma,
@@ -4751,3 +4765,675 @@ module.exports.getShadowInheritance = getShadowInheritance;
 module.exports.getPersonToForgiveEngine = getPersonToForgiveEngine;
 module.exports.getLifeAlmostLived = getLifeAlmostLived;
 module.exports.getTimeOfDayKarma = getTimeOfDayKarma;
+
+// ═══════════════════════════════════════════════════
+// ADVANCED ENGINE — BATCH 11: DIVINE ARCHITECTURE + COSMIC MEMORY
+// ═══════════════════════════════════════════════════
+
+function getDivineArchitectureEngines(planets, lagnaIdx, karakas, allYogas, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 171. Soul Poison — dominant repeating destroyer
+  const SOUL_POISON_MAP = {
+    Mars: 'anger and aggression — the destroyer is uncontrolled force',
+    Venus: 'attachment and craving — the destroyer is desire for love/pleasure',
+    Rahu: 'obsession and delusion — the destroyer is the mind that cannot stop wanting',
+    Saturn: 'fear and despair — the destroyer is contraction and hopelessness',
+    Moon: 'emotional dependency — the destroyer is need for others to complete you',
+    Mercury: 'overthinking — the destroyer is the mind that analyzes instead of acts',
+    Sun: 'ego and pride — the destroyer is the need to be seen as superior'
+  };
+  const h6Planets = Object.entries(planets).filter(([,p])=>p.house===6).map(([n])=>n);
+  const malefics = ['Mars','Saturn','Rahu','Ketu'].filter(n=>![6,8,12].includes(H(n)) === false);
+  const strongMalefic = ['Rahu','Saturn','Mars','Ketu'].find(n => B(n) >= 55 || [1,4,7,10].includes(H(n)));
+  const soulPoison = SOUL_POISON_MAP[strongMalefic||'Saturn'] || 'fear and contraction';
+
+  // 172. Dharma Collapse Trigger
+  const h9H = H('Rahu'), satH = H('Saturn');
+  const dharmaCollapse = H('Rahu')===9 ? 'temptation collapses dharma — Rahu on 9th house creates repeated ethical failures through desire'
+    : planets.Venus?.combust ? 'love collapse — Venus combust creates dharma breaks through relationship choices'
+    : H('Mars')===9 ? 'rage collapse — Mars on 9th house breaks dharma through impulsive aggression'
+    : [6,8,12].includes(H('Saturn')) ? 'despair collapse — Saturn in dusthana creates periodic hopelessness that breaks alignment'
+    : 'dharma is relatively stable — no strong collapse trigger identified';
+
+  // 173. Dharma Return Trigger
+  const jupH = H('Jupiter');
+  const dharmaReturn = ST('Jupiter').includes('Exalted') ? 'guru — exceptional teacher or wisdom tradition restores alignment'
+    : H('Ketu')===9 ? 'loss triggers return — major loss or detachment restores dharmic clarity'
+    : ST('Saturn').includes('Exalted')||ST('Saturn').includes('Own') ? 'suffering — hitting bottom restores alignment; Saturn teaches through pressure'
+    : [6,8,12].includes(H('Moon')) ? 'emotional collapse — deep feeling states return this soul to its true path'
+    : 'Jupiter transit over 9th lord — specific periods restore dharmic clarity';
+
+  // 174. Soul Contract With God
+  const AK_CONTRACT = {
+    Sun:'direct authority over one specific domain — to be a leader who serves light',
+    Moon:'to nourish and hold emotional truth for others — divine mother archetype',
+    Mars:'to fight for what is right and protect the weak — divine warrior contract',
+    Mercury:'to transmit knowledge and connect souls — divine messenger contract',
+    Jupiter:'to teach and expand consciousness — divine wisdom bearer contract',
+    Venus:'to create beauty and harmony in a broken world — divine artist/harmonizer contract',
+    Saturn:'to build lasting structures and endure — divine architect contract',
+    Rahu:'to break old patterns and introduce new consciousness — divine disruptor contract',
+    Ketu:'to point toward liberation — divine mystic and moksha guide contract'
+  };
+  const soulContract = AK_CONTRACT[ak||'Saturn'] || 'to endure and build lasting legacy';
+
+  // 175. Divine Test Pattern
+  const divineTest = planets.Saturn?.bala >= 65 ? 'patience — life repeatedly tests whether this soul can wait without losing faith'
+    : H('Mars')===7||H('Mars')===1 ? 'control — life repeatedly tests whether this soul can act without rage'
+    : Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10 ? 'attachment — life tests whether love can exist without possession'
+    : [6,8,12].includes(H('Moon')) ? 'trust — life tests whether this soul can trust despite emotional wounds'
+    : 'endurance — the repeated test is whether this soul can persist through difficulty';
+
+  // 176. Grace Activation Key
+  const graceKey = ST('Jupiter').includes('Exalted')||[1,4,5,9].includes(jupH) ? 'guru/seva — grace activates through selfless service and teacher connection'
+    : !planets.Venus?.combust && (ST('Venus').includes('Exalted')||ST('Venus').includes('Own')) ? 'devotion — grace activates through bhakti and surrender to deity'
+    : H('Ketu')===12||H('Ketu')===9 ? 'silence — grace activates through withdrawal and inner quietude'
+    : [6,8,12].includes(H('Moon')) ? 'surrender — grace activates through releasing control and trusting the process'
+    : 'consistent practice — grace activates through regular spiritual discipline';
+
+  return {
+    soulPoison: { planet: strongMalefic, desc: soulPoison, summary: `Soul Poison: ${soulPoison}` },
+    dharmaCollapse: { summary: `Dharma Collapse Trigger: ${dharmaCollapse}` },
+    dharmaReturn: { summary: `Dharma Return Trigger: ${dharmaReturn}` },
+    soulContract: { ak, summary: `Soul Contract With God: ${soulContract}` },
+    divineTest: { summary: `Divine Test Pattern: ${divineTest}` },
+    graceKey: { summary: `Grace Activation Key: ${graceKey}` },
+  };
+}
+
+function getCosmicMemoryEngines(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 177. Previous Life Status
+  const PL_STATUS = {
+    Sun: ST('Sun').includes('Exalted')||ST('Sun').includes('Own') ? 'royalty or priest — high-status soul with authority in previous incarnation' : 'official or authority figure — served in governance or religious role',
+    Jupiter: 'teacher or sage — wisdom-holder with spiritual authority in previous life',
+    Mars: 'warrior or commander — active combatant or military leader in previous life',
+    Saturn: 'laborer or servant — worked in service, agriculture, or craft in previous life',
+    Mercury: 'trader or scribe — merchant, accountant, or writer in previous life',
+    Moon: 'caregiver or healer — served through nurturing, medicine, or emotional support',
+    Venus: 'artist or courtesan — lived through beauty, art, or intimate service',
+    Rahu: 'foreigner or outcast — lived outside the mainstream social structure',
+    Ketu: 'renunciate or mystic — lived in spiritual practice or hermitage'
+  };
+  const prevStatus = PL_STATUS[ak||'Saturn'];
+
+  // 178. Previous Death Pattern
+  const h8Planets = Object.entries(planets).filter(([,p])=>p.house===8).map(([n])=>n);
+  const prevDeath = H('Mars')===8 || (planets.Mars?.aspects||[]).includes(8) ? 'violent or sudden — Mars on 8th suggests previous death through conflict, accident, or force'
+    : H('Moon')===8 ? 'emotional or drowning — Moon in 8th suggests death through water, grief, or emotional collapse'
+    : H('Saturn')===8 ? 'prolonged illness or old age — Saturn in 8th suggests slow death through chronic condition'
+    : H('Rahu')===8 ? 'accident or unexpected event — Rahu in 8th suggests sudden unusual death circumstances'
+    : h8Planets.includes('Ketu') ? 'spiritual departure — Ketu in 8th suggests peaceful, conscious exit from previous life'
+    : 'natural causes — no strong violent or unusual death pattern in 8th house';
+
+  // 179. Unfinished Previous-Life Bond
+  const dk = karakas?.Darakaraka;
+  const ul = null; // would need upapadaLagna passed in
+  const unfinishedBond = dk && planets[dk]?.retrograde ? `Darakaraka ${dk} retrograde — strong unfinished bond with a soul from previous life; that person returns in this life`
+    : Math.abs((planets.Venus?.sid||0)-(planets.Ketu?.sid||0))<10 ? 'Venus-Ketu — unfinished love that ended without closure; the soul comes back to complete or release it'
+    : [6,8,12].includes(H(dk||'Venus')) ? `Darakaraka in dusthana — the unresolved partner bond carries karmic weight into this life`
+    : 'No strong unfinished bond signature — relationships in this life are relatively new contracts';
+
+  // 180. Past-Life Reputation
+  const plRep = ST('Sun').includes('Exalted')||([1,4,7,10].includes(H('Sun')) && B('Sun')>=65) ? 'honored and respected — previous-life reputation was dignified and trustworthy'
+    : H('Rahu')===10 ? 'feared or controversial — previous-life public image carried power mixed with fear'
+    : H('Saturn')===10 || ST('Saturn').includes('Debilitated') ? 'forgotten or overlooked — previous-life contribution went unrecognized despite real effort'
+    : H('Mars')===10 ? 'respected in battle or competition — previous-life reputation was built through strength and courage'
+    : 'moderate reputation — previous life was lived in relative anonymity with local respect';
+
+  return {
+    prevLifeStatus: { summary: `Previous Life Status: ${prevStatus}` },
+    prevDeathPattern: { summary: `Previous Death Pattern: ${prevDeath}` },
+    unfinishedBond: { summary: `Unfinished Previous-Life Bond: ${unfinishedBond}` },
+    pastLifeReputation: { summary: `Past-Life Reputation: ${plRep}` },
+  };
+}
+
+function getCosmicDestinyEngines(planets, lagnaIdx, karakas, allYogas, dasha) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 181. Fate Resistance Index
+  const rahuStrong = B('Rahu') >= 60 || [1,4,7,10].includes(H('Rahu'));
+  const marsStrong = B('Mars') >= 65 || ST('Mars').includes('Exalted');
+  const akAfflicted = ak && [6,8,12].includes(H(ak));
+  const resistanceScore = (rahuStrong?30:0) + (marsStrong?25:0) + (akAfflicted?25:0) + (planets.Saturn?.bala < 40 ? 20 : 0);
+  const fateResistance = resistanceScore >= 60 ? 'HIGH — this soul fights fate; life events feel forced rather than accepted; much energy spent resisting what is meant to be'
+    : resistanceScore >= 30 ? 'MODERATE — partial resistance; some life areas feel forced while others flow'
+    : 'LOW — this soul accepts fate relatively well; events unfold with less friction';
+
+  // 182. Destiny Acceptance Index
+  const satKetu = (B('Saturn')>=60?1:0) + (H('Ketu')===12||H('Ketu')===9?1:0) + ([6,8,12].includes(H('Moon'))?1:0);
+  const destinyAcceptance = satKetu >= 2 ? 'HIGH — Saturn/Ketu dominant; this soul has learned acceptance through previous suffering; can surrender to larger will'
+    : satKetu === 1 ? 'MODERATE — partial acceptance; fights some things, surrenders others'
+    : 'LOW — soul is young to acceptance; still believes personal will can override destiny in all things';
+
+  // 183. Karma Burn Rate
+  const h6Count = Object.values(planets).filter(p=>p.house===6).length;
+  const h8Count = Object.values(planets).filter(p=>p.house===8).length;
+  const burnRate = (h6Count+h8Count >= 3) ? 'FAST — dense malefic placement in 6th/8th; karma burns quickly through intense experiences; life feels compressed'
+    : (h6Count+h8Count >= 1) ? 'MODERATE — some karmic intensity; experiences are meaningful but manageable pace'
+    : 'SLOW — few malefics in dusthanas; karma burns gradually; a steady life with patient unfolding';
+
+  // 184. Divine Intervention Probability
+  const divInterv = ST('Jupiter').includes('Exalted') || [1,4,5,9].includes(H('Jupiter')) ? 'HIGH — Jupiter strongly placed in dharma/kendra; divine rescue has occurred and will occur again; grace is active'
+    : allYogas.some(y=>y.name.includes('Vipareeta')) ? 'HIGH — Vipareeta Raja Yoga; this chart is specifically built to receive divine rescue at the last moment'
+    : [1,4,7,10].includes(H('Jupiter')) ? 'MODERATE — Jupiter in Kendra protects; divine intervention likely at critical junctures'
+    : 'MODERATE-LOW — divine intervention comes through human agents rather than miraculous circumstances';
+
+  // 185. Miracle Windows
+  const mirWindows = dasha.antardashas?.filter(a => a.lord === 'Jupiter' || a.lord === 'Venus')
+    .map(a => `${dasha.current?.lord}-${a.lord} (${a.startDate.slice(0,7)} to ${a.endDate.slice(0,7)})`)
+    .slice(0,2).join(', ') || 'next Jupiter Antardasha or transit over 9th lord';
+
+  // 186. Collapse Windows
+  const collWindows = dasha.antardashas?.filter(a => ['Saturn','Rahu','Ketu'].includes(a.lord) && [6,8,12].includes(H(a.lord)))
+    .map(a => `${dasha.current?.lord}-${a.lord} (${a.startDate.slice(0,7)})`)
+    .slice(0,2).join(', ') || 'when Saturn/Rahu activate 8th house';
+
+  // 187. Rebirth Probability
+  const attachmentScore = (Math.abs((planets.Rahu?.sid||0)-(planets.Venus?.sid||0))<10?20:0)
+    + ([1,4,7].includes(H('Moon'))?0:15) + (B('Ketu')<40?20:0)
+    + (allYogas.some(y=>y.name.includes('Kaal Sarpa'))?25:0);
+  const rebirthProb = attachmentScore >= 50 ? 'HIGH — strong attachment patterns; soul likely returns for more incarnations to work through desires'
+    : attachmentScore >= 25 ? 'MODERATE — some attachments remain; few more cycles likely'
+    : 'LOWER — Ketu/Saturn strong; soul is moving toward fewer incarnations; moksha is closer';
+
+  // 188. Liberation Distance
+  const libDist = H('Ketu')===12 || H('Ketu')===9 ? 'CLOSE — Ketu in 9th/12th strongly indicates this soul is near liberation; moksha is within few cycles'
+    : ST('Ketu').includes('Exalted') ? 'CLOSE — Ketu exalted; this soul has nearly exhausted karmic accumulation'
+    : B('Ketu') >= 60 ? 'MODERATE — Ketu reasonably strong; several cycles remain but direction is toward liberation'
+    : 'FURTHER — strong Rahu/Venus/material attachments; soul needs more incarnations to exhaust desire';
+
+  return {
+    fateResistance: { score: resistanceScore, summary: `Fate Resistance: ${fateResistance}` },
+    destinyAcceptance: { summary: `Destiny Acceptance: ${destinyAcceptance}` },
+    karmaBurnRate: { summary: `Karma Burn Rate: ${burnRate}` },
+    divineIntervention: { summary: `Divine Intervention Probability: ${divInterv}` },
+    miracleWindows: { summary: `Miracle Windows: ${mirWindows}` },
+    collapseWindows: { summary: `Collapse Windows: ${collWindows}` },
+    rebirthProbability: { summary: `Rebirth Probability: ${rebirthProb}` },
+    liberationDistance: { summary: `Liberation Distance: ${libDist}` },
+  };
+}
+
+function getForbiddenRishiEngines(planets, lagnaIdx, karakas, allYogas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 189. Soul Signature Frequency
+  const SOUL_FREQ = {
+    Sun:'solar — radiates authority, draws attention, must shine; the archetype is the conscious king',
+    Moon:'lunar — deeply receptive, cycles through emotional states, nourishes others; the archetype is the divine mother',
+    Mars:'martial — generates fire and drive, activates others, fights for truth; the archetype is the sacred warrior',
+    Mercury:'mercurial — transmits information between worlds, bridges opposites; the archetype is the messenger god',
+    Jupiter:'jovial — expands everything it touches, seeks the highest truth; the archetype is the cosmic teacher',
+    Venus:'venusian — magnetizes beauty and harmony, mediates between worlds; the archetype is the divine beloved',
+    Saturn:'saturnine — crystallizes reality into lasting form, endures; the archetype is the patient builder of fate',
+    Rahu:'rahuvian — disrupts, innovates, transgresses; the archetype is the hungry ghost becoming conscious',
+    Ketu:'ketuvian — dissolves, liberates, points to the formless; the archetype is the liberated sage returning'
+  };
+  const soulFreq = SOUL_FREQ[ak||'Saturn'];
+
+  // 190. Karmic Gravity Center
+  const houseCounts = {};
+  for (let h=1; h<=12; h++) {
+    houseCounts[h] = Object.values(planets).filter(p=>p.house===h).length;
+    if ((planets[ak||'Saturn']?.aspects||[]).includes(h)) houseCounts[h] = (houseCounts[h]||0) + 2;
+  }
+  const HOUSE_THEMES = {1:'identity and physical existence',2:'wealth and family values',3:'communication and courage',
+    4:'home and emotional security',5:'children and creative intelligence',6:'service and overcoming obstacles',
+    7:'relationships and marriage',8:'transformation and hidden depths',9:'dharma and spiritual seeking',
+    10:'career and public legacy',11:'gains and social purpose',12:'liberation and spiritual surrender'};
+  const gravityHouse = Object.entries(houseCounts).sort((a,b)=>b[1]-a[1])[0];
+  const gravityCenter = `H${gravityHouse[0]} (${HOUSE_THEMES[gravityHouse[0]]||''}) — this house is the center of gravity for this life`;
+
+  // 191. Cosmic Witness Pattern
+  const h9Occ = Object.entries(planets).filter(([,p])=>p.house===9).map(([n])=>n);
+  const cosmicWitness = ST('Jupiter').includes('Exalted') ? 'ancestor and deity protection active — Jupiter exalted ensures cosmic observation with grace'
+    : [1,4,5,9].includes(H('Jupiter')) ? `Jupiter in H${H('Jupiter')} — cosmic witnesses are present; actions are noticed at a higher level`
+    : h9Occ.length > 0 ? `${h9Occ.join('+')} in H9 — dharma house occupied; cosmic attention on this soul's choices`
+    : 'modest cosmic witness — actions in this life carry forward but without intense cosmic scrutiny';
+
+  // 192. Shadow Possession Pattern
+  const moonH = H('Moon');
+  const shadowPossession = Math.abs((planets.Rahu?.sid||0)-(planets.Moon?.sid||0))<15 ? 'Rahu-Moon shadow hijack — at emotional low points, Rahu takes over and creates compulsive behavior or irrational desires; most visible during stress'
+    : H('Rahu')===8 ? 'Rahu in H8 shadow possession — in moments of fear or crisis, obsessive thoughts or dark fantasies can temporarily override conscious will'
+    : [8,12].includes(moonH) ? `Moon in H${moonH} shadow pattern — in isolation or depression, shadow self emerges through emotional withdrawal and self-undoing`
+    : 'mild shadow possession risk — Rahu and Moon relatively separated; shadow hijacks are uncommon and recognizable';
+
+  // 193. Sacred Sacrifice Point
+  const h12Lord = planets[RASI_LORD[(lagnaIdx+11)%12]];
+  const sacredSacrifice = H('Ketu')===12 ? 'ego dissolution — what must be surrendered is the need to be seen, recognized, or validated'
+    : H('Ketu')===7 ? 'partnership dependence — what must be surrendered is the need for a specific person to complete you'
+    : H('Ketu')===10 ? 'career identity — what must be surrendered is attachment to status and public position'
+    : H('Ketu')===5 ? 'creative ego — what must be surrendered is attachment to personal children or creative works'
+    : H('Saturn')===12 ? 'material security — what must be surrendered is the illusion that structure provides safety'
+    : 'control of outcomes — what must be surrendered is the need to know how things will unfold';
+
+  // 194. Cosmic Price of Destiny
+  const cosmicPrice = ST('Saturn').includes('Exalted')||[1,4,7,10].includes(H('Saturn')) ? 'solitude — the price of highest achievement is periods of deep aloneness; success comes at the cost of isolation'
+    : H('Saturn')===10 ? 'delayed recognition — the price is working for years without acknowledgment before the full achievement arrives'
+    : ak && [6,8,12].includes(H(ak)) ? `${ak} sacrifice — achieving full destiny requires surrendering what ${ak} represents`
+    : 'persistent effort — the price is sustained disciplined labor without shortcuts';
+
+  // 195. Hidden Name of Soul (Archetype)
+  const SOUL_ARCHETYPE = {
+    Sun:'The Sovereign — a soul that carries light and authority, meant to lead with integrity',
+    Moon:'The Guardian — a soul that holds and protects emotional truth for others',
+    Mars:'The Warrior-Saint — a soul that fights for justice and protects the vulnerable',
+    Mercury:'The Scribe of Fate — a soul that records and transmits essential knowledge',
+    Jupiter:'The Great Teacher — a soul that carries wisdom across incarnations to distribute',
+    Venus:'The Divine Artist — a soul that manifests love and beauty as a spiritual act',
+    Saturn:'The Karmic Architect — a soul that builds the structures through which others grow',
+    Rahu:'The Sacred Disruptor — a soul that breaks what must be broken for new light to enter',
+    Ketu:'The Mystic of the Threshold — a soul standing between worlds, pointing toward the formless'
+  };
+  const hiddenName = SOUL_ARCHETYPE[ak||'Saturn'];
+
+  // 196. End-of-Life Realization
+  const h12Planets = Object.entries(planets).filter(([,p])=>p.house===12).map(([n])=>n);
+  const eolRealization = H('Ketu')===12 ? 'the formless was always home — at life end, this soul realizes material world was the dream, silence is truth'
+    : h12Planets.includes('Jupiter') ? 'grace was present all along — the final realization is that divine protection was there even when unfelt'
+    : B(ak||'Saturn') >= 65 ? 'the work was the worship — the end realization is that dedicated daily action was itself the spiritual path'
+    : [6,8,12].includes(H(ak||'Sun')) ? 'suffering was the teacher — at life end, even the hardest experiences are recognized as essential curriculum'
+    : 'love was the only real thing — the final clarity is that relationships and connection were the true purpose';
+
+  // 197. Final Liberation Obstacle
+  const mostAttached = ['Venus','Moon','Rahu','Mars','Mercury'].reduce((max, n) =>
+    (B(n) > B(max||n)) ? n : max, null);
+  const LIBERATION_OBSTACLE = {
+    Venus:'love and beauty — cannot leave while attached to a specific person, aesthetic pleasure, or the need to be loved',
+    Moon:'emotional belonging — cannot leave while needing to feel held, needed, or emotionally safe',
+    Rahu:'future desires — cannot leave while carrying unfulfilled ambitions or obsessive cravings',
+    Mars:'unresolved conflict — cannot leave while holding anger or an unresolved fight',
+    Mercury:'intellectual curiosity — cannot leave while still wanting to know more, understand more, figure it out',
+    Jupiter:'teaching debt — cannot leave while there is wisdom to transmit that has not yet been shared',
+    Saturn:'unfinished structure — cannot leave while a building, system, or institution is incomplete'
+  };
+  const finalObstacle = LIBERATION_OBSTACLE[mostAttached||'Venus'];
+
+  // 198. What Universe Wants From You
+  const AK_MISSION = {
+    Sun:'to embody and distribute light — not to shine for yourself but to illuminate others',
+    Moon:'to be the emotional anchor — to hold space for others feeling and never abandon them',
+    Mars:'to protect and fight for truth — to use courage in service of justice, not personal gain',
+    Mercury:'to transmit wisdom — to be the bridge between what is known and those who need to know',
+    Jupiter:'to teach — every encounter is a classroom; the universe wants wisdom distributed through you',
+    Venus:'to create harmony — to make beauty and peace where there was chaos and ugliness',
+    Saturn:'to build what lasts — to create structures, systems, and legacies that outlive the body',
+    Rahu:'to disrupt what is frozen — to introduce new consciousness into stagnant systems',
+    Ketu:'to point toward liberation — to help others see through illusion by embodying detachment'
+  };
+  const universeWants = AK_MISSION[ak||'Saturn'];
+
+  return {
+    soulSignatureFreq: { summary: `Soul Signature Frequency: ${soulFreq}` },
+    karmicGravityCenter: { summary: `Karmic Gravity Center: ${gravityCenter}` },
+    cosmicWitness: { summary: `Cosmic Witness Pattern: ${cosmicWitness}` },
+    shadowPossession: { summary: `Shadow Possession Pattern: ${shadowPossession}` },
+    sacredSacrifice: { summary: `Sacred Sacrifice Point: ${sacredSacrifice}` },
+    cosmicPrice: { summary: `Cosmic Price of Destiny: ${cosmicPrice}` },
+    hiddenSoulName: { summary: `Hidden Name of Soul: ${hiddenName}` },
+    endOfLifeRealization: { summary: `End-of-Life Realization: ${eolRealization}` },
+    finalLibObstacle: { summary: `Final Liberation Obstacle: ${finalObstacle}` },
+    universeWants: { summary: `What Universe Wants From You: ${universeWants}` },
+  };
+}
+
+function getPastLifeOriginEngines(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 199. Past-Life Geography
+  const PL_GEO = {
+    Moon:'water region — coast, river, lake environment; soul memory carries water',
+    Venus:'fertile land or pleasure-rich region — gardens, valleys, trading cities',
+    Sun:'desert or sunlit plateau — arid, bright, open landscape',
+    Mars:'battlefield or mountain — rugged, harsh, demanding terrain',
+    Saturn:'cold mountain or agricultural land — disciplined, sparse environment',
+    Ketu:'forest or jungle — isolated, dense, away from civilization',
+    Rahu:'foreign land or urban center — outside native culture, immigrant soul'
+  };
+  const moonSign = planets.Moon?.rasi;
+  const plGeoKey = H('Moon')===12||H('Rahu')===12 ? 'Rahu' : H('Moon')===4 ? 'Moon' : H('Saturn')===12 ? 'Saturn' : H('Ketu')===12 ? 'Ketu' : 'Moon';
+  const plGeo = PL_GEO[plGeoKey] || 'mixed geography — multiple incarnations in different regions';
+
+  // 200. Civilization Memory
+  const CIV_MEM = {
+    Sun:'solar civilization — Egypt, ancient Rome, or Vedic royal court; priest-king societies',
+    Moon:'matriarchal or coastal civilization — Indus Valley, maritime culture, moon-goddess worship',
+    Mars:'warrior civilization — Sparta, Rajput kingdoms, or martial tribal cultures',
+    Mercury:'merchant civilization — ancient trade routes, Silk Road, mercantile city-states',
+    Jupiter:'priestly or philosophical civilization — ancient Greece, Brahmin ashram, or Buddhist monastery',
+    Venus:'artistic civilization — Mughal court, Renaissance culture, or temple-dancer tradition',
+    Saturn:'agricultural or mining civilization — laboring class, feudal village, or monastic order',
+    Rahu:'multicultural or foreign civilization — lived as an outsider or immigrant in a dominant culture',
+    Ketu:'hermit or forest civilization — rishi tradition, cave-dwelling mystic, jungle ashram'
+  };
+  const civMem = CIV_MEM[ak||'Saturn'];
+
+  // 201. Past-Life Social Rank
+  const plRank = (ST('Sun').includes('Exalted')||([1,4,7,10].includes(H('Sun'))&&B('Sun')>=65)) ? 'aristocracy or priesthood — held elevated social position with ceremonial authority'
+    : ST('Jupiter').includes('Exalted')||H('Jupiter')===9 ? 'scholar or sage — respected teacher with social influence through knowledge'
+    : ST('Mars').includes('Exalted')||[1,10].includes(H('Mars')) ? 'military officer or landowner — rank through martial courage or territorial holding'
+    : ST('Saturn').includes('Debilitated')||[6,8,12].includes(H('Saturn')) ? 'laboring class or servant — worked in subordinate roles with limited social mobility'
+    : H('Rahu')===10 ? 'self-made or outsider — achieved status through unusual or transgressive means'
+    : 'middle rank — lived as skilled craftsperson, merchant, or mid-level official';
+
+  // 202. Homeland Attachment
+  const hlAttachment = H('Moon')===4&&!([6,8,12].includes(H('Moon'))) ? 'strong homeland attachment — Moon in 4th creates deep emotional tie to birthplace; feels most alive in native soil'
+    : Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10 ? 'severed homeland attachment — Ketu-Moon indicates past-life displacement or voluntary exile from homeland; emotional homelessness'
+    : H('Ketu')===4 ? 'past-life homeland loss — something ended or was taken from the original home; searching for home in this life'
+    : H('Rahu')===4 ? 'foreign home resonance — more comfortable in adopted cultures than birthplace; the foreign feels like home'
+    : 'moderate homeland attachment — neither deeply rooted nor deeply displaced; adapts to location';
+
+  // 203. Past-Life Language Memory
+  const plLang = ST('Mercury').includes('Exalted') ? 'strong language memory — Mercury exalted suggests fluency in a classical or sacred language from previous life; certain languages feel innately familiar'
+    : H('Mercury')===2 ? 'speech-based tradition — past life involved oral transmission; storytelling, chanting, or formal recitation'
+    : planets.Moon?.nakshatra === 'Shravana' ? 'Shravana nakshatra — the listener and transmitter; past life involved preserving oral tradition'
+    : H('Mercury')===9 ? 'philosophical language — past life spoke in concepts, debate, or sacred text interpretation'
+    : 'standard language karma — no strong past-life language signature; learning comes through normal means in this life';
+
+  return {
+    plGeography: { summary: `Past-Life Geography: ${plGeo}` },
+    civilizationMemory: { summary: `Civilization Memory: ${civMem}` },
+    plSocialRank: { summary: `Past-Life Social Rank: ${plRank}` },
+    homelandAttachment: { summary: `Homeland Attachment: ${hlAttachment}` },
+    plLanguageMemory: { summary: `Past-Life Language Memory: ${plLang}` },
+  };
+}
+
+function getSoulAgeExpansionEngines(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 204. Incarnation Count Estimate
+  const satKetu12 = (B('Saturn')>=60?1:0) + ([9,12].includes(H('Ketu'))?1:0) + (Object.values(planets).filter(p=>p.house===12).length>=2?1:0);
+  const incarnationCount = satKetu12 >= 3 ? 'many incarnations — Saturn/Ketu/12th house heavily loaded; karmic density suggests extensive previous-life experience'
+    : satKetu12 >= 2 ? 'moderate incarnation count — this soul has lived through several cycles; wisdom is available but desire remains'
+    : 'fewer incarnations — relatively fresh soul; high enthusiasm, direct engagement with life, less detachment';
+
+  // 205. Soul Weariness Signature
+  const weariness = B('Moon')<40 && B('Saturn')>=55 ? 'HIGH weariness — Moon weak + Saturn strong creates profound fatigue; this soul has seen too much and carries it in the body'
+    : [8,12].includes(H('Moon')) && H('Ketu')===12 ? 'HIGH weariness — Moon in 8th/12th with Ketu in 12th; soul longs for the between-lives rest'
+    : [8,12].includes(H('Moon')) ? 'MODERATE weariness — Moon in dusthana suggests emotional fatigue that makes the world feel heavy'
+    : 'LOW weariness — soul is engaged and energized; still finds life interesting and worth participating in';
+
+  // 206. First Human Life Marker
+  const firstLife = B('Saturn')<35 && B('Ketu')<35 && Object.values(planets).filter(p=>p.house===12).length===0
+    ? 'possible first or early human life — very low karmic complexity; high directness, low philosophical depth, strong material engagement'
+    : 'not a first life — sufficient karmic complexity suggests multiple human incarnations already completed';
+
+  // 207. Repetition Cycle Count
+  const repCount = (B('Saturn')>=65?1:0) + ([6,8,12].includes(H('Ketu'))?1:0) + (B('Moon')<45?1:0) + (Object.values(planets).filter(p=>[6,8,12].includes(p.house)).length>=3?1:0);
+  const repetitionCycles = repCount >= 3 ? 'many repetition loops — this pattern has cycled through 3+ incarnations; the same wound appears in different clothing each life'
+    : repCount >= 2 ? 'moderate repetition — this karmic theme has repeated 2-3 times; strong but breakable with awareness'
+    : 'early in the loop — this karmic pattern may be appearing for the first or second time; more flexible to shift';
+
+  // 208. Oldest Unresolved Karma
+  const oldestKarma = H('Ketu')===7 ? 'partnership abandonment — the oldest unresolved wound is a relationship that ended without closure; the soul keeps returning to finish it'
+    : H('Ketu')===5 ? 'child karma — the oldest unresolved wound involves a child or creative act that was lost or abandoned'
+    : H('Ketu')===10 ? 'authority karma — the oldest wound involves being stripped of power or recognition; returning to reclaim legitimate standing'
+    : H('Ketu')===4 ? 'home/mother karma — the oldest wound is displacement from a homeland or mother separation that never healed'
+    : H('Ketu')===9 ? 'teacher betrayal karma — the oldest wound is a dharmic collapse or guru relationship that broke trust'
+    : H('Ketu')===1 ? 'identity erasure — the oldest wound is having been forced to be someone other than the true self; this life reclaims authentic identity'
+    : 'distributed karma — oldest unresolved theme is spread across multiple houses; no single dominant loop';
+
+  return {
+    incarnationCount: { summary: `Incarnation Count Estimate: ${incarnationCount}` },
+    soulWeariness: { summary: `Soul Weariness Signature: ${weariness}` },
+    firstLifeMarker: { summary: `First Human Life Marker: ${firstLife}` },
+    repetitionCycles: { summary: `Repetition Cycle Count: ${repetitionCycles}` },
+    oldestKarma: { summary: `Oldest Unresolved Karma: ${oldestKarma}` },
+  };
+}
+
+function getPastLifeEventEngines(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const dk = karakas?.Darakaraka;
+
+  // 209-214. Past life events
+  const h8Planets = Object.entries(planets).filter(([,p])=>p.house===8).map(([n])=>n);
+
+  // Death scene (209)
+  const deathScene = H('Mars')===8 ? 'violent or combat death — Mars in 8th suggests previous death through conflict, physical force, or battle'
+    : Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10 ? 'sudden departure — Ketu-Moon close conjunction suggests unexpected or accidental death that the soul did not anticipate'
+    : H('Saturn')===8 ? 'slow illness death — Saturn in 8th suggests prolonged suffering before previous-life exit'
+    : H('Moon')===8 ? 'drowning or emotional death — Moon in 8th suggests death through water or severe emotional collapse'
+    : 'natural exit — no strong violent death signature; previous departure was likely age-related';
+
+  // Betrayal (210)
+  const betrayal = dk && planets[dk]?.retrograde ? `Darakaraka ${dk} retrograde — a significant betrayal by a trusted person marked the previous life; soul carries forward a wound of broken trust`
+    : H('Rahu')===7 ? 'intimate betrayal — Rahu in 7th suggests a previous-life partner who deceived or abandoned'
+    : Math.abs((planets.Rahu?.sid||0)-(planets.Saturn?.sid||0))<15 ? 'institutional betrayal — Rahu-Saturn connection suggests betrayal by a system, king, or authority figure'
+    : 'no strong betrayal signature — previous-life relationships were relatively honest, though incomplete';
+
+  // Unfinished love (211)
+  const unfinLove = Math.abs((planets.Venus?.sid||0)-(planets.Ketu?.sid||0))<10 ? 'strong unfinished love — Venus-Ketu close conjunction; a love that ended before its time keeps returning in new form'
+    : planets.Venus?.retrograde ? 'Venus retrograde — love was interrupted, reversed, or left without resolution; this person searches for that connection again'
+    : [8,12].includes(H('Venus')) ? `Venus in H${H('Venus')} — love was hidden or sacrificed in previous life; this life seeks to experience love openly`
+    : 'moderate unfinished love — Venus shows some past-life romantic incompletion but not overwhelming';
+
+  // Vow made (212)
+  const vowMade = H('Saturn')===7 && planets[dk||'Venus']?.retrograde ? 'marriage vow broken — Saturn in 7th with DK retrograde suggests a vow of fidelity or loyalty that was abandoned'
+    : H('Saturn')===9 ? 'dharmic vow broken — Saturn in 9th suggests a spiritual or religious vow that was not fulfilled'
+    : H('Ketu')===12 ? 'monastic vow — Ketu in 12th suggests a previous-life vow of renunciation that the soul partially abandoned; returning to complete it'
+    : 'no strong vow signature — previous life commitments were kept or naturally completed';
+
+  // Lost child (213)
+  const lostChild = H('Ketu')===5 ? 'lost child karma — Ketu in 5th strongly suggests a previous life where a child was lost, abandoned, or separated from; strong emotional charge around children'
+    : [6,8,12].includes(H(RASI_LORD[(lagnaIdx+4)%12])) ? `5th lord in dusthana — a child was lost or separated in previous life; this creates complex feelings about having children in this life`
+    : 'no strong lost child karma — 5th house and Ketu not strongly connected in this configuration';
+
+  // Enemy return (214)
+  const enemyReturn = H('Rahu')===6 ? 'enemy returns — Rahu in 6th suggests a previous-life enemy has incarnated again in close proximity; may appear as colleague, rival, or difficult authority figure'
+    : H('Mars')===6 ? 'past battlefield rival — Mars in 6th indicates someone who opposed this soul in a previous life appears again; competition feels strangely familiar'
+    : H('Saturn')===6 ? 'karmic obstacle from previous life returns — Saturn in 6th brings back an old adversary who tests this soul through service or conflict'
+    : 'no strong enemy return signature — opposition in this life is likely new karma rather than recurring pattern';
+
+  return {
+    deathScene: { summary: `Past-Life Death Scene: ${deathScene}` },
+    pastLifeBetrayalEvent: { summary: `Past-Life Betrayal Event: ${betrayal}` },
+    unfinishedLoveEvent: { summary: `Unfinished Previous-Life Love: ${unfinLove}` },
+    vowMadeEvent: { summary: `Past-Life Vow: ${vowMade}` },
+    lostChildEvent: { summary: `Lost Child Karma: ${lostChild}` },
+    enemyReturnEvent: { summary: `Enemy Return Karma: ${enemyReturn}` },
+  };
+}
+
+function getSoulTravelEngines(planets, lagnaIdx, karakas, nakshatra) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 215. Interlife State
+  const interlife = H('Ketu')===12 ? 'peaceful interlife — Ketu in 12th indicates the soul rested between births in a state of clarity; arrived in this life relatively fresh'
+    : [8,12].includes(H('Moon')) ? 'troubled interlife — Moon in 8th/12th suggests confusion or unresolved emotion in the interlife state; arrived carrying unprocessed experience'
+    : H('Jupiter')===12 ? 'blessed interlife — Jupiter in 12th indicates divine protection during the between-lives state; guidance was available'
+    : Object.values(planets).filter(p=>p.house===12).length >= 3 ? 'dense interlife processing — multiple planets in 12th suggests heavy karma was reviewed and compressed during interlife'
+    : 'neutral interlife — standard transition between incarnations; neither particularly peaceful nor troubled';
+
+  // 216. Why This Family
+  const whyFamily = H('Saturn')===4 ? 'karmic repayment — chosen this family to repay a debt of care or service owed from previous life; they provided shelter before, you provide something now'
+    : ST('Moon').includes('Exalted') ? 'soul support — chose this family because the mother or lineage carries positive energy needed to launch this soul forward'
+    : [6,8,12].includes(H('Moon')) ? 'karmic classroom — chose this family for the specific lessons their difficulty provides; not punishment, but curriculum'
+    : H('Jupiter')===4 ? 'dharmic anchor — chose this family for their wisdom tradition or spiritual environment that gives early access to higher understanding'
+    : 'unfinished lineage karma — this family line carries a specific pattern this soul volunteered to either continue or resolve';
+
+  // 217. Why This Country
+  const whyCountry = H('Rahu')===9||H('Rahu')===12 ? 'karmic contrast country — chosen to experience a culture very different from previous-life norm; learning through cultural friction'
+    : H('Moon')===4 ? 'homeland resonance — chose a country that carries memory of a previous home; emotional comfort through geographic recognition'
+    : H('Ketu')===9 ? 'spiritual geography — chosen for proximity to specific sacred sites, wisdom traditions, or liberation-supporting environment'
+    : H('Saturn')===4 ? 'karmic endurance country — chosen for its challenges; the difficulty of this geography is itself the teaching'
+    : 'dharmic alignment — this geography carries the specific social conditions needed for this soul unique mission to unfold';
+
+  // 218. Why This Body
+  const whyBody = ST(RASI_LORD[lagnaIdx]).includes('Exalted') ? 'this body is a gift — strong Lagna lord indicates a body specifically chosen for capability; it is adequate for the mission'
+    : [6,8,12].includes(H(RASI_LORD[lagnaIdx])) ? 'this body is the lesson — Lagna lord in dusthana means the body itself is a karmic teaching; its limitations are deliberate'
+    : B('Mars')>=65 ? 'warrior body — Mars strength indicates a body with above-average physical capacity, chosen for active engagement with the material world'
+    : B('Saturn')>=65 ? 'endurance body — Saturn strength indicates a body built for long life and sustained effort rather than speed or intensity'
+    : 'appropriate body — this body has the specific combination of strength and limitation needed for the karmic work of this incarnation';
+
+  // 219. Why This Gender
+  const venus = B('Venus'), mars = B('Mars'), moon = B('Moon'), sun = B('Sun');
+  const whyGender = venus > mars && moon > sun ? 'feminine polarity chosen — Venus/Moon dominant; this soul chose feminine frequency to develop receptivity, intuition, and relational wisdom'
+    : mars > venus && sun > moon ? 'masculine polarity chosen — Mars/Sun dominant; soul chose masculine frequency to develop initiative, authority, and direct action'
+    : 'balanced polarity — neither strongly masculine nor feminine planet dominates; this incarnation balances both frequencies';
+
+  return {
+    interlifeState: { summary: `Interlife State: ${interlife}` },
+    whyThisFamily: { summary: `Why This Family: ${whyFamily}` },
+    whyThisCountry: { summary: `Why This Country: ${whyCountry}` },
+    whyThisBody: { summary: `Why This Body: ${whyBody}` },
+    whyThisGender: { summary: `Why This Gender: ${whyGender}` },
+  };
+}
+
+function getDeepMemoryEngines(planets, lagnaIdx, karakas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+  const dk = karakas?.Darakaraka;
+
+  // 220. Forgotten Skill Retrieval
+  const forgottenSkill = ST('Mercury').includes('Exalted') ? 'advanced communication or writing skill — Mercury exalted preserves eloquence from previous life; under pressure or passion, this talent re-emerges naturally'
+    : B('Jupiter')>=65 && [5,9].includes(H('Jupiter')) ? 'teaching or philosophical skill — Jupiter in 5th/9th carries preserved wisdom; can access depth in these subjects beyond what this life has taught'
+    : B('Venus')>=65 ? 'artistic or healing skill — Venus strong carries preserved aesthetic or therapeutic ability; certain art forms or healing practices feel inexplicably familiar'
+    : H('Mars')===3 ? 'martial art or craft skill — Mars in 3rd carries preserved physical skill; certain physical disciplines feel remembered rather than learned'
+    : 'latent skill in 5th house significations — what the 5th house lord represents holds preserved talent from previous life';
+
+  // 221. Soul Familiarity Triggers
+  const famTriggers = Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10 ? 'Ketu-Moon — certain smells, sounds, or places trigger inexplicable recognition; particular landscapes feel like home without reason'
+    : H('Ketu')===4 ? 'places trigger memory — entering certain types of buildings or landscapes (particularly old structures) activates past-life recognition'
+    : H('Ketu')===7 ? 'people trigger memory — meeting certain types of individuals activates instant recognition beyond this life knowing them'
+    : H('Ketu')===5 ? 'children and creative acts trigger memory — watching children play or engaging in certain creative acts brings flashes of another time'
+    : 'periodic deja vu through Moon nakshatra resonance — specific situations matching nakshatra themes activate recognition';
+
+  // 222. Past-Life Fear Carryover
+  const plFear = H('Mars')===8 || H('Mars')===12 ? 'carried fear of violence or sudden loss — Mars in 8th/12th brings forward a fear of physical danger or sudden harm that exceeds this life experience'
+    : Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10 ? 'carried fear of abandonment — Ketu-Moon close conjunction brings forward deep existential fear of being left alone that began in a previous life'
+    : H('Saturn')===1 ? 'carried fear of failure or punishment — Saturn on Lagna brings forward anxiety about being judged, failed, or punished that began in a previous authority context'
+    : H('Ketu')===7 ? 'carried fear of intimacy — Ketu in 7th brings forward a wound from a previous relationship that makes closeness feel dangerous'
+    : 'past-life fear is mild — no strongly carried forward phobia; current life fears are largely new karma';
+
+  // 223. Past-Life Guilt Carryover
+  const plGuilt = [6,8,12].includes(H('Saturn')) ? `Saturn in H${H('Saturn')} — carried guilt from previous life action; a specific decision or inaction haunts this soul unconsciously; manifests as over-responsibility or excessive self-punishment`
+    : [6,8,12].includes(H('Moon')) ? `Moon in H${H('Moon')} — emotional guilt carryover; this person was perhaps cold or unavailable to someone in a previous life and carries the weight`
+    : H('Ketu')===9 ? 'dharmic guilt — broke a spiritual vow or betrayed a teacher in previous life; this life carries an unconscious need to restore spiritual integrity'
+    : 'no strong guilt carryover — Saturn and Moon relatively free from dusthana burden in this configuration';
+
+  // 224. Past-Life Promise Active
+  const plPromise = H('Saturn')===7 && (dk && planets[dk]?.retrograde) ? `active marriage vow — Saturn in 7th with DK ${dk} retrograde suggests a promise made to a specific soul about partnership; that soul may appear in this life expecting fulfillment`
+    : H('Ketu')===9 ? 'active spiritual vow — Ketu in 9th suggests a past-life promise to pursue liberation or serve a specific tradition; still binding on some level'
+    : H('Saturn')===5 ? 'active promise to a child — Saturn in 5th suggests a past-life commitment to a specific soul to protect or raise them; that soul may return as your child'
+    : 'no dominant past-life promise active — karmic contracts are being freshly negotiated in this incarnation';
+
+  return {
+    forgottenSkill: { summary: `Forgotten Skill Retrieval: ${forgottenSkill}` },
+    soulFamiliarityTriggers: { summary: `Soul Familiarity Triggers: ${famTriggers}` },
+    plFearCarryover: { summary: `Past-Life Fear Carryover: ${plFear}` },
+    plGuiltCarryover: { summary: `Past-Life Guilt Carryover: ${plGuilt}` },
+    plPromiseActive: { summary: `Past-Life Promise Active: ${plPromise}` },
+  };
+}
+
+function getFinalSynthesisEngines225to230(planets, lagnaIdx, karakas, allYogas) {
+  const H = name => planets[name]?.house || 0;
+  const ST = name => planets[name]?.status || '';
+  const B = name => planets[name]?.bala || 50;
+  const ak = karakas?.Atmakaraka;
+
+  // 225. Who Were You Before?
+  const PL_ARCHETYPE = {
+    Sun:'a sovereign, high priest, or commander — you carried authority and were responsible for many',
+    Moon:'a healer, mother, or keeper of community — you held emotional space for an entire group',
+    Mars:'a warrior, protector, or revolutionary — you fought for what you believed and died for it',
+    Mercury:'a scribe, teacher, or merchant — you transmitted knowledge or goods between people and places',
+    Jupiter:'a guru, philosopher, or judge — you carried wisdom and arbitrated truth',
+    Venus:'an artist, courtesan, or devotee — you embodied beauty and brought grace to a specific domain',
+    Saturn:'a builder, farmer, or servant — you worked quietly to sustain structures others took for granted',
+    Rahu:'an outsider, foreigner, or transgressor — you broke rules or crossed boundaries between worlds',
+    Ketu:'a mystic, renunciate, or sage — you had already turned away from the world toward the formless'
+  };
+  const whoWerYou = PL_ARCHETYPE[ak||'Saturn'];
+
+  // 226. What Did You Lose?
+  const whatLost = H('Moon')===8||H('Moon')===12 ? 'emotional belonging — the core previous-life loss was a place or person where you felt completely held and seen; that is what you search for now'
+    : Math.abs((planets.Venus?.sid||0)-(planets.Ketu?.sid||0))<10 ? 'a great love — Venus-Ketu indicates a love that was real, complete, and then taken or surrendered; the ache of that loss persists across incarnations'
+    : [6,8,12].includes(H('Venus')) ? 'love and pleasure — Venus in dusthana suggests the previous life involved sacrifice of intimate happiness for duty or circumstance'
+    : H('Ketu')===10 ? 'status and recognition — what was lost was a position of respect and authority that was stripped away or abandoned'
+    : H('Ketu')===5 ? 'creative children or a creative masterwork — something built with great love was lost before its time'
+    : 'belonging — the core previous-life loss was membership in a tribe, family, or homeland that could not be sustained';
+
+  // 227. What Did You Bring?
+  const whatBrought = ak ? `${ak} essence — you carried forward the gifts and wounds of ${ak}: ${RASI_LORD[planets[ak]?.rasiIdx||0]} energy in ${planets[ak]?.rasi||'its sign'}`
+    : 'accumulated wisdom from the dominant nakshatra tradition';
+  const giftWound = B('Ketu')>=55 ? 'gift of spiritual depth; wound of detachment from material life'
+    : Math.abs((planets.Ketu?.sid||0)-(planets.Moon?.sid||0))<10 ? 'gift of psychic sensitivity; wound of emotional fragmentation'
+    : H('Mars')===1&&ST('Mars').includes('Exalted') ? 'gift of extraordinary courage; wound of difficulty accepting limitation'
+    : ST('Jupiter').includes('Exalted') ? 'gift of profound wisdom; wound of expecting wisdom from others who cannot access it'
+    : 'gift of endurance; wound of carrying what should be set down';
+
+  // 228. What Must End?
+  const whatMustEnd = H('Ketu')===7 ? 'the search for the specific previous-life partner — they came, the lesson is complete, the attachment must now be released'
+    : H('Ketu')===1 ? 'false identity — the pattern of being who others need rather than who you are must end in this life'
+    : H('Ketu')===10 ? 'career as identity — the loop of defining yourself entirely through status and achievement must complete and release'
+    : H('Ketu')===4 ? 'holding onto a home or mother energy that is already gone — the grief of that loss must resolve and release'
+    : H('Ketu')===5 ? 'attachment to a specific creative vision or child that did not manifest as expected — that mourning must complete'
+    : `the ${RASI_LORD[(lagnaIdx + H('Ketu') - 1 + 12) % 12]}-type pattern that keeps repeating — it has served its purpose and must now close`;
+
+  // 229. What Happens If It Ends?
+  const h9Occ = Object.entries(planets).filter(([,p])=>p.house===9).map(([n])=>n);
+  const ifItEnds = ST('Jupiter').includes('Exalted')||[1,5,9].includes(H('Jupiter'))
+    ? 'significant grace activates — when the core karmic loop closes, Jupiter opens a new chapter of genuine expansion, teaching, and dharmic fulfillment'
+    : H('Ketu')===12 ? 'liberation draws closer — completing this pattern accelerates the soul toward moksha; the weight lifts permanently'
+    : allYogas.some(y=>y.name.includes('Vipareeta')) ? 'the chart rises completely — Vipareeta Raja Yoga fully activates when the old pattern releases; what was suffering becomes the source of power'
+    : 'sustained peace — not dramatic, but real: a quietness replaces the chronic low-level urgency; life flows rather than fights';
+
+  // 230. What Happens If It Repeats?
+  const h6Count = Object.values(planets).filter(p=>p.house===6).length;
+  const h8Count = Object.values(planets).filter(p=>p.house===8).length;
+  const ifRepeats = h6Count+h8Count >= 3 ? 'dense karmic re-accumulation — if this pattern repeats, the next incarnation carries even heavier version of the same wound; the lesson becomes more severe'
+    : [6,8,12].includes(H('Saturn')) ? 'Saturn deepens the karma — Saturn in dusthana means each repetition adds more crystallization; the pattern becomes harder to exit the longer it runs'
+    : allYogas.some(y=>y.name.includes('Kaal Sarpa')) ? 'the Kaal Sarpa repeats its cycle — another full revolution around the karmic wheel before the next opportunity to exit'
+    : 'another incarnation with similar themes — the soul returns again in a similar life structure until the core pattern is recognized and resolved';
+
+  return {
+    whoWereYouBefore: { summary: `Who Were You Before: ${whoWerYou}` },
+    whatDidYouLose: { summary: `What Did You Lose: ${whatLost}` },
+    whatDidYouBring: { summary: `What Did You Bring: ${whatBrought} | ${giftWound}` },
+    whatMustEnd: { summary: `What Must End: ${whatMustEnd}` },
+    whatHappensIfEnds: { summary: `What Happens If It Ends: ${ifItEnds}` },
+    whatHappensIfRepeats: { summary: `What Happens If It Repeats: ${ifRepeats}` },
+  };
+}
+
+module.exports.getDivineArchitectureEngines = getDivineArchitectureEngines;
+module.exports.getCosmicMemoryEngines = getCosmicMemoryEngines;
+module.exports.getCosmicDestinyEngines = getCosmicDestinyEngines;
+module.exports.getForbiddenRishiEngines = getForbiddenRishiEngines;
+module.exports.getPastLifeOriginEngines = getPastLifeOriginEngines;
+module.exports.getSoulAgeExpansionEngines = getSoulAgeExpansionEngines;
+module.exports.getPastLifeEventEngines = getPastLifeEventEngines;
+module.exports.getSoulTravelEngines = getSoulTravelEngines;
+module.exports.getDeepMemoryEngines = getDeepMemoryEngines;
+module.exports.getFinalSynthesisEngines225to230 = getFinalSynthesisEngines225to230;
