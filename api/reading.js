@@ -32,7 +32,7 @@ TRUTH LEVELS — append to predictions:
  
 SUPPRESSION:
 × Moon H12 alone ≠ neglect × Rahu H7 alone ≠ foreign spouse × Single malefic ≠ definite failure
-× Classical doshas only (Mangal/KalaSarpa/Kemadruma/GuruChandal/Pitru/Shrapit)
+× No death prediction × No terminal disease × Classical doshas only (Mangal/KalaSarpa/Kemadruma/GuruChandal/Pitru/Shrapit)
 × Gemstone only if: (a) functionally benefic for Lagna + (b) bala<55 + (c) current dasha needs it`;
  
 function buildMasterFactSheet(chart) {
@@ -147,7 +147,7 @@ module.exports = async function handler(req, res) {
       });
     };
  
-    const [r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23] = await Promise.all([
+    const [r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25] = await Promise.all([
  
       call(['ACTIVE KARMA PRIORITY','PHYSICAL APPEARANCE','PERSONALITY CORE','EMOTIONAL NATURE','PUBLIC MASK vs INNER SELF'], 1200),
  
@@ -197,10 +197,14 @@ module.exports = async function handler(req, res) {
  
       call(['PAST-LIFE GEOGRAPHY','CIVILIZATION MEMORY','PAST-LIFE SOCIAL RANK','HOMELAND ATTACHMENT','PAST-LIFE LANGUAGE MEMORY','PAST-LIFE DEATH SCENE','PAST-LIFE BETRAYAL EVENT','UNFINISHED LOVE','PAST-LIFE VOW','LOST CHILD KARMA','ENEMY RETURN KARMA','FORGOTTEN SKILL RETRIEVAL','SOUL FAMILIARITY TRIGGERS','PAST-LIFE FEAR CARRYOVER','PAST-LIFE GUILT CARRYOVER','PAST-LIFE PROMISE ACTIVE','WHO WERE YOU BEFORE','WHAT DID YOU LOSE','WHAT DID YOU BRING','WHAT MUST END','WHAT HAPPENS IF IT ENDS','WHAT HAPPENS IF IT REPEATS'], 4400),
  
+      call(['PRETA ATTACHMENT (unsettled dead influence)','SOUL PREDATOR PATTERN (who drains you)','SOUL IMPRISONMENT PATTERN (what traps you)','FORBIDDEN DESIRE ENGINE','SOUL FRAGMENTATION INDEX','REBIRTH DELAY ENGINE','ANCESTOR HUNGER ENGINE','HIDDEN DESIRE ENGINE','WHO WAITS AFTER DEATH','PROMISE BEFORE BIRTH','POSSESSION SUSCEPTIBILITY INDEX','LINEAGE COLLAPSE POINT (are you the breaker)','SHADOW DEITY','COSMIC PUNISHMENT LOOP'], 2800),
+ 
+      call(['D60 ROOT CAUSE (why karma originally formed)','D60 PREVIOUS LIFE IDENTITY','D60 COLLAPSE EVENT (what ended the previous life)','D60 FINAL EMOTION AT DEATH (becomes subconscious baseline now)','D60 ANCESTOR CONTINUATION (which ancestor continues through you)','D60 POWER USE PATTERN','D60 MODE OF DEATH','D60 LIBERATION KEY'], 1600),
+ 
     ]);
  
-    const reading = [r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23]
-      .map(r => r.content.map(c => c.text||'').join(''))
+    const reading = [r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,r16,r17,r18,r19,r20,r21,r22,r23,r24,r25]
+      .map(r => r?.content?.map(c => c.text||'').join('')||'')
       .join('\n\n');
  
     res.status(200).json({ ok: true, chart, reading });
