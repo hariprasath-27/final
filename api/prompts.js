@@ -1,5 +1,3 @@
-
- 
 'use strict';
  
 function buildReadingPrompt(chart, person, question) {
@@ -204,6 +202,10 @@ function buildReadingPrompt(chart, person, question) {
   const soulTravelStr = chart.soulTravel ? Object.values(chart.soulTravel).map(e=>e.summary).join(' | ') : '';
   const deepMemStr = chart.deepMemory ? Object.values(chart.deepMemory).map(e=>e.summary).join(' | ') : '';
   const finalSynth230Str = chart.finalSynth230 ? Object.values(chart.finalSynth230).map(e=>e.summary).join(' | ') : '';
+ 
+  // Batch 12 - Esoteric + D60
+  const esotericStr = chart.esotericEngines ? Object.values(chart.esotericEngines).map(e=>e.summary?.slice(0,60)).join(' | ') : '';
+  const d60Str = chart.d60Forensic ? Object.values(chart.d60Forensic).map(e=>e.summary?.slice(0,60)).join(' | ') : '';
   const transitTriggersStr = chart.transitTriggers
     ? [
         chart.transitTriggers.marriage?.length  ? 'MARRIAGE TRIGGERS: '+chart.transitTriggers.marriage.join(' | ')  : '',
